@@ -17,8 +17,8 @@ public class CoinGeckoServiceStatus {
 
  private WebClient webClient;
 
- public CoinGeckoServiceStatus(WebClient webClient) {
-  this.webClient = webClient;
+ public CoinGeckoServiceStatus(WebClient wClient) {
+  this.webClient = wClient;
  }
 
  public Mono<Ping> getStatusCoinGeckoService() {
