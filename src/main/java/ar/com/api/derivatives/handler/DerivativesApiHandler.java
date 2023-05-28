@@ -2,6 +2,8 @@ package ar.com.api.derivatives.handler;
 
 import java.util.Optional;
 
+import ar.com.api.derivatives.dto.ExchangeIdDTO;
+import ar.com.api.derivatives.model.DerivativeData;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -87,6 +89,27 @@ public class DerivativesApiHandler {
                     .body(
                          serviceDerivatives.getListDerivativeExhcangeOrderedAndPaginated(filterDTO), DerivativeExchange.class
                          );
+ }
+
+ public Mono<ServerResponse> getShowDerivativeExchangeData(ServerRequest sRequest) {
+
+     Optional<String> opIncludeTickers = Optional.empty();
+
+     if(sRequest.queryParam("includeTickers").isPresent()){
+         opIncludeTickers = Optional.
+                 of(sRequest.queryParam("includeTickers")
+                 .get());
+     }
+
+     ExchangeIdDTO dto = ExchangeIdDTO.builder()
+             .idExchange(sRequest.pathVariable("idExchange"))
+             .includeTickers(opIncludeTickers).build();
+
+     return ServerResponse
+             .ok()
+             .body(
+                     serviceDerivatives.showDerivativeExchangeData(dto), DerivativeData.class
+             );
  }
  
 }

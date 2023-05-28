@@ -7,6 +7,7 @@ coins:
   healthAPI: '/health-api'
   derivativesApi: '/derivatives'
   derivativesExchangesApi: '/derivatives/exchanges'
+  derivativesExchangesByIdGecko: '/derivatives/exchanges/{idExchange}'
 
 ## Url Coin Gecko RestService
 api:
@@ -14,3 +15,4 @@ api:
   ping: '/ping'
   derivativesGecko: '/derivatives'
   derivativesExchangesGecko: '/derivatives/exchanges'
+  derivativesExchangesByIdGecko: '/derivatives/exchanges/%s'

@@ -25,6 +25,9 @@ public class ApiRouter {
 
  @Value("${coins.derivativesExchangesApi}") 
  private String URL_DERIVATIVES_EXCHANGE_GECKO_API;
+
+ @Value("${coins.derivativesExchangesByIdGecko}")
+ private String URL_DERIVATIVES_EXCHANGE_BY_ID_GECKO_API;
  
  @Bean
  public RouterFunction<ServerResponse> route(DerivativesApiHandler handler) {
@@ -38,9 +41,11 @@ public class ApiRouter {
                         handler::getListOfDerivativesTickers)
             .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_GECKO_API,
                         RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                        handler::getListDerivativesOfExchangesOrderedAndPaginated)                        
+                        handler::getListDerivativesOfExchangesOrderedAndPaginated)
+            .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_BY_ID_GECKO_API,
+                    RequestPredicates.accept(MediaType.APPLICATION_JSON),
+                    handler::getShowDerivativeExchangeData)
             .build();
-
  }
 
 }
