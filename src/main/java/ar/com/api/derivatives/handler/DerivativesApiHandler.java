@@ -3,16 +3,13 @@ package ar.com.api.derivatives.handler;
 import java.util.Optional;
 
 import ar.com.api.derivatives.dto.ExchangeIdDTO;
-import ar.com.api.derivatives.model.DerivativeData;
+import ar.com.api.derivatives.model.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import ar.com.api.derivatives.dto.DerivativeDTO;
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
-import ar.com.api.derivatives.model.Derivative;
-import ar.com.api.derivatives.model.DerivativeExchange;
-import ar.com.api.derivatives.model.Ping;
 import ar.com.api.derivatives.services.CoinGeckoServiceStatus;
 import ar.com.api.derivatives.services.DerivativesGeckoApiService;
 import ar.com.api.derivatives.utils.StringToInteger;
@@ -108,8 +105,22 @@ public class DerivativesApiHandler {
      return ServerResponse
              .ok()
              .body(
-                     serviceDerivatives.showDerivativeExchangeData(dto), DerivativeData.class
+                     serviceDerivatives.showDerivativeExchangeData(dto),
+                     DerivativeData.class
              );
+ }
+
+ public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest){
+
+     log.info("In getAllDerivativesExchanges");
+
+     return ServerResponse
+             .ok()
+             .body(
+                     serviceDerivatives.getListOfDerivativesExchanges(),
+                     Exchange.class
+             );
+
  }
  
 }

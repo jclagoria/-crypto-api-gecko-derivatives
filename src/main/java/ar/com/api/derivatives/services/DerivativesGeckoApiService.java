@@ -1,5 +1,6 @@
 package ar.com.api.derivatives.services;
 
+import ar.com.api.derivatives.model.Exchange;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -14,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Service
 @Slf4j
 public class DerivativesGeckoApiService {
@@ -25,7 +28,10 @@ public class DerivativesGeckoApiService {
  private String URL_GECKO_API_DERIVATIVES_EXCHANGE;
 
  @Value("${api.derivativesExchangesByIdGecko}")
- private String URLGECKO_API_DERIVATIVES_EXCHANGE_ID;
+ private String URL_GECKO_API_DERIVATIVES_EXCHANGE_ID;
+
+ @Value("${api.derivativesExchangesListNameAndId}")
+ private String URL_GECKO_API_DERIVATIVES_LIST;
 
  private WebClient webClient;
 
@@ -73,9 +79,9 @@ public class DerivativesGeckoApiService {
 
  public Mono<DerivativeData> showDerivativeExchangeData(ExchangeIdDTO filterDTO) {
 
-  log.info("Calling method: ", URLGECKO_API_DERIVATIVES_EXCHANGE_ID);
+  log.info("Calling method: ", URL_GECKO_API_DERIVATIVES_EXCHANGE_ID);
 
-  String urlDerivativesByExchangeId = String.format(URLGECKO_API_DERIVATIVES_EXCHANGE_ID, filterDTO.getIdExchange());
+  String urlDerivativesByExchangeId = String.format(URL_GECKO_API_DERIVATIVES_EXCHANGE_ID, filterDTO.getIdExchange());
 
   return webClient
              .get()
@@ -84,6 +90,19 @@ public class DerivativesGeckoApiService {
              .bodyToMono(DerivativeData.class)
              .doOnError(throwable -> log.error("The service is unavailable!", throwable))
              .onErrorComplete();
+ }
+
+ public Flux<Exchange> getListOfDerivativesExchanges(){
+
+  log.info("Calling method: ", URL_GECKO_API_DERIVATIVES_LIST);
+
+  return webClient
+          .get()
+          .uri(URL_GECKO_API_DERIVATIVES_LIST)
+          .retrieve()
+          .bodyToFlux(Exchange.class)
+          .doOnError(throwable -> log.error("The service is unavailable!", throwable))
+          .onErrorComplete();
  }
 
 }

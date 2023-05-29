@@ -8,6 +8,7 @@ coins:
   derivativesApi: '/derivatives'
   derivativesExchangesApi: '/derivatives/exchanges'
   derivativesExchangesByIdGecko: '/derivatives/exchanges/{idExchange}'
+  derivativesExchangesListNameAndId: '/derivatives/exchanges/list'
 
 ## Url Coin Gecko RestService
 api:
@@ -16,3 +17,4 @@ api:
   derivativesGecko: '/derivatives'
   derivativesExchangesGecko: '/derivatives/exchanges'
   derivativesExchangesByIdGecko: '/derivatives/exchanges/%s'
+  derivativesExchangesListNameAndId: '/derivatives/exchanges/list'
