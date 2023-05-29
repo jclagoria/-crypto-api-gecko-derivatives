@@ -28,24 +28,29 @@ public class ApiRouter {
 
  @Value("${coins.derivativesExchangesByIdGecko}")
  private String URL_DERIVATIVES_EXCHANGE_BY_ID_GECKO_API;
+
+ @Value("${coins.derivativesExchangesListNameAndId}")
+ private String URL_ALL_DERIVATIVES_EXCHANGE_ONLY_NAME_AND_ID;
  
  @Bean
  public RouterFunction<ServerResponse> route(DerivativesApiHandler handler) {
 
   return RouterFunctions
-            .route()
-            .GET(URL_SERVICE_API + URL_HEALTH_GECKO_API, 
-                        handler::getStatusServiceCoinGecko)
-            .GET(URL_SERVICE_API + URL_DERIVATIVES_GECKO_API, 
-                        RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                        handler::getListOfDerivativesTickers)
-            .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_GECKO_API,
-                        RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                        handler::getListDerivativesOfExchangesOrderedAndPaginated)
-            .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_BY_ID_GECKO_API,
-                    RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                    handler::getShowDerivativeExchangeData)
-            .build();
+          .route()
+          .GET(URL_SERVICE_API + URL_HEALTH_GECKO_API,
+                  handler::getStatusServiceCoinGecko)
+          .GET(URL_SERVICE_API + URL_ALL_DERIVATIVES_EXCHANGE_ONLY_NAME_AND_ID,
+                  handler::getAllDerivativesExchanges)
+          .GET(URL_SERVICE_API + URL_DERIVATIVES_GECKO_API,
+                  RequestPredicates.accept(MediaType.APPLICATION_JSON),
+                  handler::getListOfDerivativesTickers)
+          .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_GECKO_API,
+                  RequestPredicates.accept(MediaType.APPLICATION_JSON),
+                  handler::getListDerivativesOfExchangesOrderedAndPaginated)
+          .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_BY_ID_GECKO_API,
+                  RequestPredicates.accept(MediaType.APPLICATION_JSON),
+                  handler::getShowDerivativeExchangeData)
+          .build();
  }
 
 }
