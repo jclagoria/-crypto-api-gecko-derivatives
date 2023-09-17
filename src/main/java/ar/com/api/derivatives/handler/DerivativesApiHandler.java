@@ -22,20 +22,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class DerivativesApiHandler {
  
- private CoinGeckoServiceStatus serviceStatus;
-
  private DerivativesGeckoApiService serviceDerivatives;
-
- public Mono<ServerResponse> getStatusServiceCoinGecko(ServerRequest serverRequest) {
-
-  log.info("In getStatusServiceCoinGecko");
-
-  return ServerResponse
-                .ok()
-                .body(
-                     serviceStatus.getStatusCoinGeckoService(), 
-                     Ping.class);
- }
 
  public Mono<ServerResponse> getListOfDerivativesTickers(ServerRequest sRequest) {
      log.info("In getListOfDerivativesTickers");
