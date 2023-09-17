@@ -12,13 +12,10 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import ar.com.api.derivatives.handler.DerivativesApiHandler;
 
 @Configuration
-public class ApiRouter {
+public class DerivativesApiRouter {
  
  @Value("${coins.baseURL}")
  private String URL_SERVICE_API;
-
- @Value("${coins.healthAPI}") 
- private String URL_HEALTH_GECKO_API;
 
  @Value("${coins.derivativesApi}") 
  private String URL_DERIVATIVES_GECKO_API;
@@ -37,8 +34,6 @@ public class ApiRouter {
 
   return RouterFunctions
           .route()
-          .GET(URL_SERVICE_API + URL_HEALTH_GECKO_API,
-                  handler::getStatusServiceCoinGecko)
           .GET(URL_SERVICE_API + URL_ALL_DERIVATIVES_EXCHANGE_ONLY_NAME_AND_ID,
                   handler::getAllDerivativesExchanges)
           .GET(URL_SERVICE_API + URL_DERIVATIVES_GECKO_API,
