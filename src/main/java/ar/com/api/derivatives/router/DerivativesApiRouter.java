@@ -12,7 +12,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import ar.com.api.derivatives.handler.DerivativesApiHandler;
 
 @Configuration
-public class DerivativesApiRouter {
+public class DerivativesApiRouter extends AbstractRouterConfig {
  
  @Value("${coins.baseURL}")
  private String URL_SERVICE_API;

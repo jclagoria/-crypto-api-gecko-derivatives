@@ -1,7 +1,7 @@
 package ar.com.api.derivatives.exception;
 
-import ar.com.api.general.exception.external.CoinGeckoBadRequestException;
-import ar.com.api.general.exception.external.CoinGeckoServerException;
+import ar.com.api.derivatives.exception.external.CoinGeckoBadRequestException;
+import ar.com.api.derivatives.exception.external.CoinGeckoServerException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.reactive.error.DefaultErrorAttributes;
 import org.springframework.context.annotation.Configuration;
@@ -36,17 +36,17 @@ public class CustomErrorAttributes extends DefaultErrorAttributes {
 
     private Optional<HttpStatus> determineHttpStatus(Throwable error) {
 
-        if(error instanceof CoinGeckoBadRequestException) {
+        if (error instanceof CoinGeckoBadRequestException) {
             return Optional.of(HttpStatus.NOT_FOUND);
         }
 
-        if(error instanceof ResponseStatusException){
+        if (error instanceof ResponseStatusException) {
             error.getMessage();
             return Optional.of(HttpStatus.BAD_REQUEST);
         }
 
-        if(error instanceof CoinGeckoServerException ||
-                error instanceof ServiceException){
+        if (error instanceof CoinGeckoServerException ||
+                error instanceof ServiceException) {
             return Optional.of(HttpStatus.SERVICE_UNAVAILABLE);
         }
 

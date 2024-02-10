@@ -1,0 +1,20 @@
+server:
+  port: 8088
+
+## URL Rest Services applicacion
+coins:
+  baseURL: 'api/coins'
+  healthAPI: '/health-api'
+  derivativesApi: '/derivatives'
+  derivativesExchangesApi: '/derivatives/exchanges'
+  derivativesExchangesByIdGecko: '/derivatives/exchanges/{idExchange}'
+  derivativesExchangesListNameAndId: '/derivatives/exchanges/list'
+
+## Url Coin Gecko RestService
+api:
+  urlCoinGecko: 'https://api.coingecko.com/api/v3'
+  ping: '/ping'
+  derivativesGecko: '/derivatives'
+  derivativesExchangesGecko: '/derivatives/exchanges'
+  derivativesExchangesByIdGecko: '/derivatives/exchanges/%s'
+  derivativesExchangesListNameAndId: '/derivatives/exchanges/list'

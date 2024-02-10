@@ -9,7 +9,7 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 @Configuration
-public class HealthApiRouter {
+public class HealthApiRouter extends AbstractRouterConfig {
 
     @Value("${coins.baseURL}")
     private String URL_SERVICE_API;
