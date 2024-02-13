@@ -17,4 +17,4 @@ api:
   derivativesGecko: '/derivatives'
   derivativesExchangesGecko: '/derivatives/exchanges'
   derivativesExchangesByIdGecko: '/derivatives/exchanges/%s'
-  derivativesExchangesListNameAndId: '/derivatives/exchanges/list'
+  derivativesExchangesList: '/derivatives/exchanges/list'
