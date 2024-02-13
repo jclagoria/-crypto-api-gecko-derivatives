@@ -5,6 +5,7 @@ import java.util.Optional;
 import ar.com.api.derivatives.dto.ExchangeIdDTO;
 import ar.com.api.derivatives.model.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -99,15 +100,20 @@ public class DerivativesApiHandler {
 
  public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest){
 
-     log.info("In getAllDerivativesExchanges");
+     log.info("Starting getAllDerivativesExchanges");
 
-     return ServerResponse
-             .ok()
-             .body(
-                     serviceDerivatives.getListOfDerivativesExchanges(),
-                     Exchange.class
-             );
-
+     return serviceDerivatives
+             .getListOfDerivativesExchanges()
+             .collectList()
+             .flatMap(
+                     exchanges -> ServerResponse.ok().bodyValue(exchanges)
+             )
+             .onErrorResume( error -> {
+                 log.error("Error retrieving derivatives exchanges", error);
+                 int valueErrorCode = ((WebClientResponseException)error.getCause()).getStatusCode().value();
+                 return ServerResponse.status(valueErrorCode)
+                         .bodyValue(((WebClientResponseException)error.getCause()).getStatusText());
+             });
  }
  
 }

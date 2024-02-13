@@ -1,5 +1,6 @@
 package ar.com.api.derivatives.router;
 
+import ar.com.api.derivatives.configuration.ApiServiceConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,36 +14,27 @@ import ar.com.api.derivatives.handler.DerivativesApiHandler;
 
 @Configuration
 public class DerivativesApiRouter extends AbstractRouterConfig {
- 
- @Value("${coins.baseURL}")
- private String URL_SERVICE_API;
 
- @Value("${coins.derivativesApi}") 
- private String URL_DERIVATIVES_GECKO_API;
+ private ApiServiceConfig apiServiceConfig;
 
- @Value("${coins.derivativesExchangesApi}") 
- private String URL_DERIVATIVES_EXCHANGE_GECKO_API;
-
- @Value("${coins.derivativesExchangesByIdGecko}")
- private String URL_DERIVATIVES_EXCHANGE_BY_ID_GECKO_API;
-
- @Value("${coins.derivativesExchangesListNameAndId}")
- private String URL_ALL_DERIVATIVES_EXCHANGE_ONLY_NAME_AND_ID;
+ public DerivativesApiRouter(ApiServiceConfig apiServiceConfig) {
+  this.apiServiceConfig = apiServiceConfig;
+ }
  
  @Bean
  public RouterFunction<ServerResponse> route(DerivativesApiHandler handler) {
 
   return RouterFunctions
           .route()
-          .GET(URL_SERVICE_API + URL_ALL_DERIVATIVES_EXCHANGE_ONLY_NAME_AND_ID,
+          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
                   handler::getAllDerivativesExchanges)
-          .GET(URL_SERVICE_API + URL_DERIVATIVES_GECKO_API,
+          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesApi(),
                   RequestPredicates.accept(MediaType.APPLICATION_JSON),
                   handler::getListOfDerivativesTickers)
-          .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_GECKO_API,
+          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesApi(),
                   RequestPredicates.accept(MediaType.APPLICATION_JSON),
                   handler::getListDerivativesOfExchangesOrderedAndPaginated)
-          .GET(URL_SERVICE_API + URL_DERIVATIVES_EXCHANGE_BY_ID_GECKO_API,
+          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
                   RequestPredicates.accept(MediaType.APPLICATION_JSON),
                   handler::getShowDerivativeExchangeData)
           .build();

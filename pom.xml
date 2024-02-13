@@ -22,6 +22,7 @@
 		<spock.version>2.4-M1-groovy-4.0</spock.version>
 		<!-- Versión de Groovy -->
 		<groovy.version>4.0.18</groovy.version>
+		<junit-jupiter.version>5.10.2</junit-jupiter.version>
 	</properties>
 
 	<dependencies>
@@ -44,6 +45,7 @@
 			<groupId>org.apache.groovy</groupId>
 			<artifactId>groovy</artifactId>
 			<version>${groovy.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 		<!-- Spock Core para pruebas unitarias -->
@@ -80,6 +82,11 @@
 			<groupId>org.instancio</groupId>
 			<artifactId>instancio</artifactId>
 			<version>1.0.4</version>
+		</dependency>
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-test</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

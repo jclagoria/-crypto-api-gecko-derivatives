@@ -13,5 +13,9 @@ public class ExternalServerConfig {
 
     private String urlCoinGecko;
     private String ping;
+    private String derivativesExchangesList;
+    private String derivativesGecko;
+    private String derivativesExchangesGecko;
+    private String derivativesExchangesByIdGecko;
 
 }
