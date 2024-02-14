@@ -15,29 +15,28 @@ import ar.com.api.derivatives.handler.DerivativesApiHandler;
 @Configuration
 public class DerivativesApiRouter extends AbstractRouterConfig {
 
- private ApiServiceConfig apiServiceConfig;
+    private ApiServiceConfig apiServiceConfig;
 
- public DerivativesApiRouter(ApiServiceConfig apiServiceConfig) {
-  this.apiServiceConfig = apiServiceConfig;
- }
- 
- @Bean
- public RouterFunction<ServerResponse> route(DerivativesApiHandler handler) {
+    public DerivativesApiRouter(ApiServiceConfig apiServiceConfig) {
+        this.apiServiceConfig = apiServiceConfig;
+    }
 
-  return RouterFunctions
-          .route()
-          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
-                  handler::getAllDerivativesExchanges)
-          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesApi(),
-                  RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                  handler::getListOfDerivativesTickers)
-          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesApi(),
-                  RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                  handler::getListDerivativesOfExchangesOrderedAndPaginated)
-          .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
-                  RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                  handler::getShowDerivativeExchangeData)
-          .build();
- }
+    @Bean
+    public RouterFunction<ServerResponse> route(DerivativesApiHandler handler) {
+
+        return RouterFunctions
+                .route()
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
+                        handler::getAllDerivativesExchanges)
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesApi(),
+                        handler::getListOfDerivativesTickers)
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesApi(),
+                        RequestPredicates.accept(MediaType.APPLICATION_JSON),
+                        handler::getListDerivativesOfExchangesOrderedAndPaginated)
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
+                        RequestPredicates.accept(MediaType.APPLICATION_JSON),
+                        handler::getShowDerivativeExchangeData)
+                .build();
+    }
 
 }

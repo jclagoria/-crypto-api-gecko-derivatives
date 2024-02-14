@@ -9,9 +9,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import ar.com.api.derivatives.dto.DerivativeDTO;
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
-import ar.com.api.derivatives.services.CoinGeckoServiceStatus;
 import ar.com.api.derivatives.services.DerivativesGeckoApiService;
 import ar.com.api.derivatives.utils.StringToInteger;
 import lombok.AllArgsConstructor;
@@ -22,98 +20,99 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 @Slf4j
 public class DerivativesApiHandler {
- 
- private DerivativesGeckoApiService serviceDerivatives;
 
- public Mono<ServerResponse> getListOfDerivativesTickers(ServerRequest sRequest) {
-     log.info("In getListOfDerivativesTickers");
+    private DerivativesGeckoApiService serviceDerivatives;
 
-     DerivativeDTO filterDTO = DerivativeDTO
-                         .builder()
-                         .includeTickers(sRequest.queryParam("includeTickers"))
-                         .build();
-     
-     return ServerResponse
-                    .ok()
-                    .body(
-                         serviceDerivatives.getListOfDerivatives(filterDTO),
-                         Derivative.class
-                         );
- }
+    public Mono<ServerResponse> getListOfDerivativesTickers(ServerRequest sRequest) {
+        log.info("In getListOfDerivativesTickers");
 
- public Mono<ServerResponse> getListDerivativesOfExchangesOrderedAndPaginated(ServerRequest sRequest) {
+        return serviceDerivatives
+                .getListOfDerivatives()
+                .collectList()
+                .flatMap(
+                        derivatives -> ServerResponse.ok().bodyValue(derivatives)
+                )
+                .onErrorResume(error -> {
+                    log.error("Error retrieving derivatives", error);
+                    int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();
+                    return ServerResponse.status(valueErrorCode)
+                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
+                });
+    }
 
-     log.info("In getListDerivativesOfExchangesOrderedAndPaginated");
+    public Mono<ServerResponse> getListDerivativesOfExchangesOrderedAndPaginated(ServerRequest sRequest) {
 
-     Optional<Integer> optPerPage =  Optional.empty();
-     Optional<Integer> optPage = Optional.empty();
+        log.info("In getListDerivativesOfExchangesOrderedAndPaginated");
 
-     if(sRequest.queryParam("perPage").isPresent()){
-          optPerPage =  Optional
+        Optional<Integer> optPerPage = Optional.empty();
+        Optional<Integer> optPage = Optional.empty();
+
+        if (sRequest.queryParam("perPage").isPresent()) {
+            optPerPage = Optional
                     .of(sRequest.queryParam("perPage")
-                    .get()
-                    .transform(StringToInteger.INSTANCE));
-     }
-     
-     if(sRequest.queryParam("page").isPresent()){
-          optPage = Optional
+                            .get()
+                            .transform(StringToInteger.INSTANCE));
+        }
+
+        if (sRequest.queryParam("page").isPresent()) {
+            optPage = Optional
                     .of(sRequest.queryParam("page")
-                    .get()
-                    .transform(StringToInteger.INSTANCE));
-     }                    
+                            .get()
+                            .transform(StringToInteger.INSTANCE));
+        }
 
-     DerivativeExchangeDTO filterDTO = DerivativeExchangeDTO
-                              .builder()
-                              .order(sRequest.queryParam("order"))
-                              .page(optPage)
-                              .perPage(optPerPage)
-                              .build();
+        DerivativeExchangeDTO filterDTO = DerivativeExchangeDTO
+                .builder()
+                .order(sRequest.queryParam("order"))
+                .page(optPage)
+                .perPage(optPerPage)
+                .build();
 
-     return ServerResponse
-                    .ok()
-                    .body(
-                         serviceDerivatives.getListDerivativeExhcangeOrderedAndPaginated(filterDTO), DerivativeExchange.class
-                         );
- }
+        return ServerResponse
+                .ok()
+                .body(
+                        serviceDerivatives.getListDerivativeExhcangeOrderedAndPaginated(filterDTO), DerivativeExchange.class
+                );
+    }
 
- public Mono<ServerResponse> getShowDerivativeExchangeData(ServerRequest sRequest) {
+    public Mono<ServerResponse> getShowDerivativeExchangeData(ServerRequest sRequest) {
 
-     Optional<String> opIncludeTickers = Optional.empty();
+        Optional<String> opIncludeTickers = Optional.empty();
 
-     if(sRequest.queryParam("includeTickers").isPresent()){
-         opIncludeTickers = Optional.
-                 of(sRequest.queryParam("includeTickers")
-                 .get());
-     }
+        if (sRequest.queryParam("includeTickers").isPresent()) {
+            opIncludeTickers = Optional.
+                    of(sRequest.queryParam("includeTickers")
+                            .get());
+        }
 
-     ExchangeIdDTO dto = ExchangeIdDTO.builder()
-             .idExchange(sRequest.pathVariable("idExchange"))
-             .includeTickers(opIncludeTickers).build();
+        ExchangeIdDTO dto = ExchangeIdDTO.builder()
+                .idExchange(sRequest.pathVariable("idExchange"))
+                .includeTickers(opIncludeTickers).build();
 
-     return ServerResponse
-             .ok()
-             .body(
-                     serviceDerivatives.showDerivativeExchangeData(dto),
-                     DerivativeData.class
-             );
- }
+        return ServerResponse
+                .ok()
+                .body(
+                        serviceDerivatives.showDerivativeExchangeData(dto),
+                        DerivativeData.class
+                );
+    }
 
- public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest){
+    public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest) {
 
-     log.info("Starting getAllDerivativesExchanges");
+        log.info("Starting getAllDerivativesExchanges");
 
-     return serviceDerivatives
-             .getListOfDerivativesExchanges()
-             .collectList()
-             .flatMap(
-                     exchanges -> ServerResponse.ok().bodyValue(exchanges)
-             )
-             .onErrorResume( error -> {
-                 log.error("Error retrieving derivatives exchanges", error);
-                 int valueErrorCode = ((WebClientResponseException)error.getCause()).getStatusCode().value();
-                 return ServerResponse.status(valueErrorCode)
-                         .bodyValue(((WebClientResponseException)error.getCause()).getStatusText());
-             });
- }
- 
+        return serviceDerivatives
+                .getListOfDerivativesExchanges()
+                .collectList()
+                .flatMap(
+                        exchanges -> ServerResponse.ok().bodyValue(exchanges)
+                )
+                .onErrorResume(error -> {
+                    log.error("Error retrieving derivatives exchanges", error);
+                    int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();
+                    return ServerResponse.status(valueErrorCode)
+                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
+                });
+    }
+
 }

@@ -3,12 +3,10 @@ package ar.com.api.derivatives.services;
 import ar.com.api.derivatives.configuration.ExternalServerConfig;
 import ar.com.api.derivatives.exception.ManageExceptionCoinGeckoServiceApi;
 import ar.com.api.derivatives.model.Exchange;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import ar.com.api.derivatives.dto.DerivativeDTO;
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
 import ar.com.api.derivatives.dto.ExchangeIdDTO;
 import ar.com.api.derivatives.model.Derivative;
@@ -32,23 +30,22 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
 
     /**
      *
-     * @param filterDTO
      * @return
      */
-    public Flux<Derivative> getListOfDerivatives(DerivativeDTO filterDTO) {
+    public Flux<Derivative> getListOfDerivatives() {
 
-        log.info("Calling method: ", externalServerConfig.getDerivativesGecko());
+        log.info("Calling method: " + externalServerConfig.getDerivativesGecko());
 
         return webClient
                 .get()
-                .uri(externalServerConfig.getDerivativesGecko() + filterDTO.getUrlFilterString())
+                .uri(externalServerConfig.getDerivativesGecko())
                 .retrieve()
                 .onStatus(
-                        HttpStatusCode::is4xxClientError,
+                        httpStatus -> httpStatus.is4xxClientError(),
                         getClientResponseMonoDataException()
                 )
                 .onStatus(
-                        HttpStatusCode::is5xxServerError,
+                        httpStatus -> httpStatus.is5xxServerError(),
                         getClientResponseMonoServerException()
                 )
                 .bodyToFlux(Derivative.class)
