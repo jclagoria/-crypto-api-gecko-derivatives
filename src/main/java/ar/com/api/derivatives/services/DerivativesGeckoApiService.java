@@ -70,11 +70,11 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
                         filterDTO.getUrlFilterString())
                 .retrieve()
                 .onStatus(
-                        HttpStatusCode::is4xxClientError,
+                        status -> status.is4xxClientError(),
                         getClientResponseMonoDataException()
                 )
                 .onStatus(
-                        HttpStatusCode::is5xxServerError,
+                        status -> status.is5xxServerError(),
                         getClientResponseMonoServerException()
                 )
                 .bodyToFlux(DerivativeExchange.class)
