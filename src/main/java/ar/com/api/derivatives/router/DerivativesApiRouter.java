@@ -33,7 +33,7 @@ public class DerivativesApiRouter extends AbstractRouterConfig {
                 .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesByIdGecko(),
                         RequestPredicates.accept(MediaType.APPLICATION_JSON),
                         handler::getShowDerivativeExchangeData)
-                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesApi(),
                         RequestPredicates.accept(MediaType.APPLICATION_JSON),
                         handler::getListDerivativesOfExchangesOrderedAndPaginated)
                 .build();

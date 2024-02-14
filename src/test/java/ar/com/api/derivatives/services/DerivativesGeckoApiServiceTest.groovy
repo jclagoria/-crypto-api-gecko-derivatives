@@ -1,10 +1,12 @@
 package ar.com.api.derivatives.services
 
 import ar.com.api.derivatives.configuration.ExternalServerConfig
+import ar.com.api.derivatives.dto.DerivativeExchangeDTO
 import ar.com.api.derivatives.dto.ExchangeIdDTO
 import ar.com.api.derivatives.exception.ServiceException
 import ar.com.api.derivatives.model.Derivative
 import ar.com.api.derivatives.model.DerivativeData
+import ar.com.api.derivatives.model.DerivativeExchange
 import ar.com.api.derivatives.model.Exchange
 import ar.com.api.derivatives.utils.ValidationUtils
 import org.instancio.Instancio
@@ -35,6 +37,7 @@ class DerivativesGeckoApiServiceTest extends Specification {
         externalServerConfig.getDerivativesExchangesList() >> "mockUriListDerivatives"
         externalServerConfig.getDerivativesGecko() >> "mockUriDerivativesGecko"
         externalServerConfig.getDerivativesExchangesByIdGecko() >> "mockUriDerivativeData"
+        externalServerConfig.getDerivativesExchangesGecko() >> "mockUriDerivativesExchange"
 
         webClientMock.get() >> requestHeaderUriMock
         requestHeaderUriMock.uri(_ as String) >> requestHeadersMock
@@ -83,17 +86,17 @@ class DerivativesGeckoApiServiceTest extends Specification {
 
     def "getListOfDerivativesExchanges returns a list of exchanges successfully"() {
         given:
-        Exchange expectedExchangeMock = Instancio.create(Exchange)
-        responseSpecMock.bodyToFlux(Exchange) >> Flux.just(expectedExchangeMock)
+            Exchange expectedExchangeMock = Instancio.create(Exchange)
+            responseSpecMock.bodyToFlux(Exchange) >> Flux.just(expectedExchangeMock)
 
         when:
-        Flux<Exchange> actualExchange = derivativesGeckoApiServiceMock.getListOfDerivativesExchanges()
+            Flux<Exchange> actualExchange = derivativesGeckoApiServiceMock.getListOfDerivativesExchanges()
 
         then:
-        StepVerifier
-                .create(actualExchange)
-                .expectNext(expectedExchangeMock)
-                .verifyComplete()
+            StepVerifier
+                    .create(actualExchange)
+                    .expectNext(expectedExchangeMock)
+                    .verifyComplete()
     }
 
     def "getListOfDerivativesExchanges handles 400 Bad Request Error"() {
@@ -157,6 +160,48 @@ class DerivativesGeckoApiServiceTest extends Specification {
 
         then:
             ValidationUtils.validate5xxError(result5xxError)
+    }
+
+    def "getListDerivativeExchangedOrderedAndPaginated returns derivative data successfully"() {
+        given:
+            DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
+            DerivativeExchange expectedDerivativeExchange = Instancio.create(DerivativeExchange)
+            responseSpecMock.bodyToFlux(DerivativeExchange) >> Flux.just(expectedDerivativeExchange)
+
+        when:
+            Flux<DerivativeExchange> actualDerivativeExchange = derivativesGeckoApiServiceMock
+                    .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
+        then:
+            StepVerifier
+                    .create(actualDerivativeExchange)
+                    .expectNext(expectedDerivativeExchange)
+                    .verifyComplete()
+    }
+
+    def "getListDerivativeExchangedOrderedAndPaginated handles 400 Bad Request Error"() {
+        given:
+            DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
+            simulateWebClientErrorResponseForFlux(400, "Bad Request", DerivativeExchange)
+
+        when:
+            Flux<DerivativeExchange> result4xxError = derivativesGeckoApiServiceMock
+                    .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
+
+        then:
+            ValidationUtils.validate4xxError(result4xxError)
+    }
+
+    def "getListDerivativeExchangedOrderedAndPaginated handles 500 Server Internal Error"() {
+        given:
+        DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
+        simulateWebClientErrorResponseForFlux(500, "Server Internal Error", DerivativeExchange)
+
+        when:
+        Flux<DerivativeExchange> result5xxError = derivativesGeckoApiServiceMock
+                .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
+
+        then:
+        ValidationUtils.validate5xxError(result5xxError)
     }
 
     private void simulateWebClientErrorResponseForFlux(int statusCode, String statusMessage, Class responseType) {

@@ -91,35 +91,28 @@ public class DerivativesApiHandler {
 
         log.info("In getListDerivativesOfExchangesOrderedAndPaginated");
 
-        Optional<Integer> optPerPage = Optional.empty();
-        Optional<Integer> optPage = Optional.empty();
+        Optional<Integer> optPerPage = sRequest
+                .queryParam("perPage")
+                .map(StringToInteger.INSTANCE);
+        Optional<Integer> optPage = sRequest
+                .queryParam("page")
+                .map(StringToInteger.INSTANCE);
 
-        if (sRequest.queryParam("perPage").isPresent()) {
-            optPerPage = Optional
-                    .of(sRequest.queryParam("perPage")
-                            .get()
-                            .transform(StringToInteger.INSTANCE));
-        }
-
-        if (sRequest.queryParam("page").isPresent()) {
-            optPage = Optional
-                    .of(sRequest.queryParam("page")
-                            .get()
-                            .transform(StringToInteger.INSTANCE));
-        }
-
-        DerivativeExchangeDTO filterDTO = DerivativeExchangeDTO
-                .builder()
+        DerivativeExchangeDTO filterDTO = DerivativeExchangeDTO.builder()
                 .order(sRequest.queryParam("order"))
                 .page(optPage)
                 .perPage(optPerPage)
                 .build();
 
-        return ServerResponse
-                .ok()
-                .body(
-                        serviceDerivatives.getListDerivativeExchangedOrderedAndPaginated(filterDTO), DerivativeExchange.class
-                );
+        return serviceDerivatives.getListDerivativeExchangedOrderedAndPaginated(filterDTO)
+                .collectList()
+                .flatMap( derivativeExchange -> ServerResponse.ok().bodyValue(derivativeExchange))
+                .onErrorResume(error -> {
+                    log.error("Error retrieving List of Derivatives Exchanges Ordered and Paginated", error);
+                    int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();
+                    return ServerResponse.status(valueErrorCode)
+                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
+                });
     }
 
 }
