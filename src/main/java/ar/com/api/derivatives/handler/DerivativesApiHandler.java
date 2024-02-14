@@ -40,6 +40,53 @@ public class DerivativesApiHandler {
                 });
     }
 
+    public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest) {
+
+        log.info("Starting getAllDerivativesExchanges");
+
+        return serviceDerivatives
+                .getListOfDerivativesExchanges()
+                .collectList()
+                .flatMap(
+                        exchanges -> ServerResponse.ok().bodyValue(exchanges)
+                )
+                .onErrorResume(error -> {
+                    log.error("Error retrieving derivatives exchanges", error);
+                    int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();
+                    return ServerResponse.status(valueErrorCode)
+                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
+                });
+    }
+
+    public Mono<ServerResponse> getShowDerivativeExchangeData(ServerRequest sRequest) {
+
+        log.info("Starting getShowDerivativeExchangeData");
+
+        Optional<String> opIncludeTickers = Optional.empty();
+
+        if (sRequest.queryParam("includeTickers").isPresent()) {
+            opIncludeTickers = Optional.
+                    of(sRequest.queryParam("includeTickers")
+                            .get());
+        }
+
+        ExchangeIdDTO dto = ExchangeIdDTO.builder()
+                .idExchange(sRequest.pathVariable("idExchange"))
+                .includeTickers(opIncludeTickers).build();
+
+        return serviceDerivatives
+                .getShowDerivativeExchangeData(dto)
+                .flatMap( data ->
+                        ServerResponse.ok().bodyValue(data))
+                .onErrorResume( error -> {
+                    log.error("Error retrieving derivatives exchanges", error);
+                    int valueErrorCode = ((WebClientResponseException) error.getCause())
+                            .getStatusCode().value();
+                    return ServerResponse.status(valueErrorCode)
+                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
+                });
+    }
+
     public Mono<ServerResponse> getListDerivativesOfExchangesOrderedAndPaginated(ServerRequest sRequest) {
 
         log.info("In getListDerivativesOfExchangesOrderedAndPaginated");
@@ -71,48 +118,8 @@ public class DerivativesApiHandler {
         return ServerResponse
                 .ok()
                 .body(
-                        serviceDerivatives.getListDerivativeExhcangeOrderedAndPaginated(filterDTO), DerivativeExchange.class
+                        serviceDerivatives.getListDerivativeExchangedOrderedAndPaginated(filterDTO), DerivativeExchange.class
                 );
-    }
-
-    public Mono<ServerResponse> getShowDerivativeExchangeData(ServerRequest sRequest) {
-
-        Optional<String> opIncludeTickers = Optional.empty();
-
-        if (sRequest.queryParam("includeTickers").isPresent()) {
-            opIncludeTickers = Optional.
-                    of(sRequest.queryParam("includeTickers")
-                            .get());
-        }
-
-        ExchangeIdDTO dto = ExchangeIdDTO.builder()
-                .idExchange(sRequest.pathVariable("idExchange"))
-                .includeTickers(opIncludeTickers).build();
-
-        return ServerResponse
-                .ok()
-                .body(
-                        serviceDerivatives.showDerivativeExchangeData(dto),
-                        DerivativeData.class
-                );
-    }
-
-    public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest) {
-
-        log.info("Starting getAllDerivativesExchanges");
-
-        return serviceDerivatives
-                .getListOfDerivativesExchanges()
-                .collectList()
-                .flatMap(
-                        exchanges -> ServerResponse.ok().bodyValue(exchanges)
-                )
-                .onErrorResume(error -> {
-                    log.error("Error retrieving derivatives exchanges", error);
-                    int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();
-                    return ServerResponse.status(valueErrorCode)
-                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
-                });
     }
 
 }

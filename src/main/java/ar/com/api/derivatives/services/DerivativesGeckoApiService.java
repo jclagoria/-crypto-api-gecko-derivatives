@@ -34,7 +34,7 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
      */
     public Flux<Derivative> getListOfDerivatives() {
 
-        log.info("Calling method: " + externalServerConfig.getDerivativesGecko());
+        log.info("Calling method: {}", externalServerConfig.getDerivativesGecko());
 
         return webClient
                 .get()
@@ -59,11 +59,10 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
      * @param filterDTO
      * @return
      */
-    public Flux<DerivativeExchange> getListDerivativeExhcangeOrderedAndPaginated(
-            DerivativeExchangeDTO filterDTO
-    ) {
+    public Flux<DerivativeExchange> getListDerivativeExchangedOrderedAndPaginated(
+            DerivativeExchangeDTO filterDTO) {
 
-        log.info("Calling method: ", externalServerConfig.getDerivativesExchangesGecko());
+        log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesGecko());
 
         return webClient
                 .get()
@@ -84,9 +83,9 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
                 );
     }
 
-    public Mono<DerivativeData> showDerivativeExchangeData(ExchangeIdDTO filterDTO) {
+    public Mono<DerivativeData> getShowDerivativeExchangeData(ExchangeIdDTO filterDTO) {
 
-        log.info("Calling method: ", externalServerConfig.getDerivativesExchangesByIdGecko());
+        log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesByIdGecko());
 
         String urlDerivativesByExchangeId = String.format(
                 externalServerConfig.getDerivativesExchangesByIdGecko(),
@@ -97,11 +96,11 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
                 .uri(urlDerivativesByExchangeId + filterDTO.getUrlFilterString())
                 .retrieve()
                 .onStatus(
-                        HttpStatusCode::is4xxClientError,
+                        status -> status.is4xxClientError(),
                         getClientResponseMonoDataException()
                 )
                 .onStatus(
-                        HttpStatusCode::is5xxServerError,
+                        status -> status.is5xxServerError(),
                         getClientResponseMonoServerException()
                 )
                 .bodyToMono(DerivativeData.class)

@@ -26,16 +26,16 @@ public class DerivativesApiRouter extends AbstractRouterConfig {
 
         return RouterFunctions
                 .route()
-                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
-                        handler::getAllDerivativesExchanges)
                 .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesApi(),
                         handler::getListOfDerivativesTickers)
-                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesApi(),
-                        RequestPredicates.accept(MediaType.APPLICATION_JSON),
-                        handler::getListDerivativesOfExchangesOrderedAndPaginated)
                 .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
+                        handler::getAllDerivativesExchanges)
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesByIdGecko(),
                         RequestPredicates.accept(MediaType.APPLICATION_JSON),
                         handler::getShowDerivativeExchangeData)
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getDerivativesExchangesListNameAndId(),
+                        RequestPredicates.accept(MediaType.APPLICATION_JSON),
+                        handler::getListDerivativesOfExchangesOrderedAndPaginated)
                 .build();
     }
 
