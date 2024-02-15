@@ -3,7 +3,6 @@ package ar.com.api.derivatives.services
 import ar.com.api.derivatives.configuration.ExternalServerConfig
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO
 import ar.com.api.derivatives.dto.ExchangeIdDTO
-import ar.com.api.derivatives.exception.ServiceException
 import ar.com.api.derivatives.model.Derivative
 import ar.com.api.derivatives.model.DerivativeData
 import ar.com.api.derivatives.model.DerivativeExchange
@@ -193,8 +192,9 @@ class DerivativesGeckoApiServiceTest extends Specification {
 
     def "getListDerivativeExchangedOrderedAndPaginated handles 500 Server Internal Error"() {
         given:
-        DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
-        simulateWebClientErrorResponseForFlux(500, "Server Internal Error", DerivativeExchange)
+            DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
+            simulateWebClientErrorResponseForFlux(500,
+                    "Server Internal Error", DerivativeExchange)
 
         when:
         Flux<DerivativeExchange> result5xxError = derivativesGeckoApiServiceMock
