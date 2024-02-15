@@ -5,6 +5,7 @@ import ar.com.api.derivatives.services.CoinGeckoServiceStatus;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
@@ -18,13 +19,18 @@ public class HealthApiHandler {
 
     public Mono<ServerResponse> getStatusServiceCoinGecko(ServerRequest serverRequest) {
 
-        log.info("In getStatusServiceCoinGecko");
+        log.info("Fetching CoinGecko service status");
 
-        return ServerResponse
-                .ok()
-                .body(
-                        serviceStatus.getStatusCoinGeckoService(),
-                        Ping.class);
+        return serviceStatus.getStatusCoinGeckoService()
+                .flatMap(ping -> ServerResponse.ok().bodyValue(ping))
+                .switchIfEmpty(ServerResponse.notFound().build())
+                .onErrorResume(error -> {
+                    log.error("Error fetching CoinGecko service status", error);
+                    int valueErrorCode = ((WebClientResponseException) error.getCause())
+                            .getStatusCode().value();
+                    return  ServerResponse.status(valueErrorCode)
+                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
+                });
     }
 
 }

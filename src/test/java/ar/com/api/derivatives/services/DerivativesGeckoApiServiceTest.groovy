@@ -3,7 +3,6 @@ package ar.com.api.derivatives.services
 import ar.com.api.derivatives.configuration.ExternalServerConfig
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO
 import ar.com.api.derivatives.dto.ExchangeIdDTO
-import ar.com.api.derivatives.exception.ServiceException
 import ar.com.api.derivatives.model.Derivative
 import ar.com.api.derivatives.model.DerivativeData
 import ar.com.api.derivatives.model.DerivativeExchange
@@ -67,7 +66,7 @@ class DerivativesGeckoApiServiceTest extends Specification {
             simulateWebClientErrorResponseForFlux(400, "Bad Request", Derivative)
 
         when:
-            Flux<Exchange> result4xxError = derivativesGeckoApiServiceMock.getListOfDerivatives()
+            Flux<Exchange> result4xxError = derivativesGeckoApiServiceMock.getListOfDerivatives() as Flux<Exchange>
 
         then:
             ValidationUtils.validate4xxError(result4xxError)
@@ -78,7 +77,7 @@ class DerivativesGeckoApiServiceTest extends Specification {
             simulateWebClientErrorResponseForFlux(500, "Internal Server Exception", Derivative)
 
         when:
-            Flux<Exchange> error5xxResult = derivativesGeckoApiServiceMock.getListOfDerivatives()
+            Flux<Exchange> error5xxResult = derivativesGeckoApiServiceMock.getListOfDerivatives() as Flux<Exchange>
 
         then:
             ValidationUtils.validate5xxError(error5xxResult)
@@ -193,8 +192,9 @@ class DerivativesGeckoApiServiceTest extends Specification {
 
     def "getListDerivativeExchangedOrderedAndPaginated handles 500 Server Internal Error"() {
         given:
-        DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
-        simulateWebClientErrorResponseForFlux(500, "Server Internal Error", DerivativeExchange)
+            DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
+            simulateWebClientErrorResponseForFlux(500,
+                    "Server Internal Error", DerivativeExchange)
 
         when:
         Flux<DerivativeExchange> result5xxError = derivativesGeckoApiServiceMock
