@@ -66,7 +66,7 @@ class DerivativesGeckoApiServiceTest extends Specification {
             simulateWebClientErrorResponseForFlux(400, "Bad Request", Derivative)
 
         when:
-            Flux<Exchange> result4xxError = derivativesGeckoApiServiceMock.getListOfDerivatives()
+            Flux<Exchange> result4xxError = derivativesGeckoApiServiceMock.getListOfDerivatives() as Flux<Exchange>
 
         then:
             ValidationUtils.validate4xxError(result4xxError)
@@ -77,7 +77,7 @@ class DerivativesGeckoApiServiceTest extends Specification {
             simulateWebClientErrorResponseForFlux(500, "Internal Server Exception", Derivative)
 
         when:
-            Flux<Exchange> error5xxResult = derivativesGeckoApiServiceMock.getListOfDerivatives()
+            Flux<Exchange> error5xxResult = derivativesGeckoApiServiceMock.getListOfDerivatives() as Flux<Exchange>
 
         then:
             ValidationUtils.validate5xxError(error5xxResult)
