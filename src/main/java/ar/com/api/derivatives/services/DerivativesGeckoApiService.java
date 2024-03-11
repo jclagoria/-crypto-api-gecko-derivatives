@@ -1,29 +1,27 @@
 package ar.com.api.derivatives.services;
 
 import ar.com.api.derivatives.configuration.ExternalServerConfig;
+import ar.com.api.derivatives.configuration.HttpServiceCall;
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
 import ar.com.api.derivatives.dto.ExchangeIdDTO;
-import ar.com.api.derivatives.exception.ManageExceptionCoinGeckoServiceApi;
 import ar.com.api.derivatives.model.Derivative;
 import ar.com.api.derivatives.model.DerivativeData;
 import ar.com.api.derivatives.model.DerivativeExchange;
 import ar.com.api.derivatives.model.Exchange;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
+public class DerivativesGeckoApiService {
 
-    private WebClient webClient;
+    private final ExternalServerConfig externalServerConfig;
+    private final HttpServiceCall httpServiceCall;
 
-    private ExternalServerConfig externalServerConfig;
-
-    public DerivativesGeckoApiService(WebClient wClient, ExternalServerConfig eServerConfig) {
-        this.webClient = wClient;
+    public DerivativesGeckoApiService(HttpServiceCall serviceCall, ExternalServerConfig eServerConfig) {
+        this.httpServiceCall = serviceCall;
         this.externalServerConfig = eServerConfig;
     }
 
@@ -34,22 +32,7 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
 
         log.info("Calling method: {}", externalServerConfig.getDerivativesGecko());
 
-        return webClient
-                .get()
-                .uri(externalServerConfig.getDerivativesGecko())
-                .retrieve()
-                .onStatus(
-                        httpStatus -> httpStatus.is4xxClientError(),
-                        getClientResponseMonoDataException()
-                )
-                .onStatus(
-                        httpStatus -> httpStatus.is5xxServerError(),
-                        getClientResponseMonoServerException()
-                )
-                .bodyToFlux(Derivative.class)
-                .doOnError(
-                        ManageExceptionCoinGeckoServiceApi::throwServiceException
-                );
+        return null;
     }
 
     /**
@@ -59,73 +42,29 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
     public Flux<DerivativeExchange> getListDerivativeExchangedOrderedAndPaginated(
             DerivativeExchangeDTO filterDTO) {
 
-        log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesGecko());
+        log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesGecko()
+                + filterDTO.getUrlFilterString());
 
-        return webClient
-                .get()
-                .uri(externalServerConfig.getDerivativesExchangesGecko() +
-                        filterDTO.getUrlFilterString())
-                .retrieve()
-                .onStatus(
-                        status -> status.is4xxClientError(),
-                        getClientResponseMonoDataException()
-                )
-                .onStatus(
-                        status -> status.is5xxServerError(),
-                        getClientResponseMonoServerException()
-                )
-                .bodyToFlux(DerivativeExchange.class)
-                .doOnError(
-                        ManageExceptionCoinGeckoServiceApi::throwServiceException
-                );
+        return null;
     }
 
     public Mono<DerivativeData> getShowDerivativeExchangeData(ExchangeIdDTO filterDTO) {
-
-        log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesByIdGecko());
 
         String urlDerivativesByExchangeId = String.format(
                 externalServerConfig.getDerivativesExchangesByIdGecko(),
                 filterDTO.getIdExchange());
 
-        return webClient
-                .get()
-                .uri(urlDerivativesByExchangeId + filterDTO.getUrlFilterString())
-                .retrieve()
-                .onStatus(
-                        status -> status.is4xxClientError(),
-                        getClientResponseMonoDataException()
-                )
-                .onStatus(
-                        status -> status.is5xxServerError(),
-                        getClientResponseMonoServerException()
-                )
-                .bodyToMono(DerivativeData.class)
-                .doOnError(
-                        ManageExceptionCoinGeckoServiceApi::throwServiceException
-                );
+        log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesByIdGecko() +
+                filterDTO.getUrlFilterString());
+
+        return null;
     }
 
     public Flux<Exchange> getListOfDerivativesExchanges() {
 
         log.info("Calling method: " + externalServerConfig.getDerivativesExchangesList());
 
-        return webClient
-                .get()
-                .uri(externalServerConfig.getDerivativesExchangesList())
-                .retrieve()
-                .onStatus(
-                        status -> status.is4xxClientError(),
-                        getClientResponseMonoDataException()
-                )
-                .onStatus(
-                        status -> status.is5xxServerError(),
-                        getClientResponseMonoServerException()
-                )
-                .bodyToFlux(Exchange.class)
-                .doOnError(
-                        ManageExceptionCoinGeckoServiceApi::throwServiceException
-                );
+        return null;
     }
 
 }

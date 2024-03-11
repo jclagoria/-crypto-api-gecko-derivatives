@@ -1,7 +1,7 @@
 package ar.com.api.derivatives.router;
 
+import ar.com.api.derivatives.configuration.ApiServiceConfig;
 import ar.com.api.derivatives.handler.HealthApiHandler;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -9,20 +9,20 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 @Configuration
-public class HealthApiRouter extends AbstractRouterConfig {
+public class HealthApiRouter {
 
-    @Value("${coins.baseURL}")
-    private String URL_SERVICE_API;
+    private final ApiServiceConfig apiServiceConfig;
 
-    @Value("${coins.healthAPI}")
-    private String URL_HEALTH_GECKO_API;
+    public HealthApiRouter(ApiServiceConfig serviceConfig) {
+        this.apiServiceConfig = serviceConfig;
+    }
 
     @Bean
     public RouterFunction<ServerResponse> routeHealth(HealthApiHandler handler) {
 
         return RouterFunctions
                 .route()
-                .GET(URL_SERVICE_API + URL_HEALTH_GECKO_API,
+                .GET(apiServiceConfig.getBaseURL() + apiServiceConfig.getHealthAPI(),
                         handler::getStatusServiceCoinGecko)
                 .build();
     }

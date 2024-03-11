@@ -11,9 +11,9 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 @Configuration
-public class DerivativesApiRouter extends AbstractRouterConfig {
+public class DerivativesApiRouter {
 
-    private ApiServiceConfig apiServiceConfig;
+    private final ApiServiceConfig apiServiceConfig;
 
     public DerivativesApiRouter(ApiServiceConfig apiServiceConfig) {
         this.apiServiceConfig = apiServiceConfig;
