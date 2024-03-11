@@ -1,20 +1,18 @@
 package ar.com.api.derivatives.handler;
 
-import java.util.Optional;
-
-import ar.com.api.derivatives.dto.ExchangeIdDTO;
-import ar.com.api.derivatives.model.*;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.springframework.web.reactive.function.server.ServerRequest;
-import org.springframework.web.reactive.function.server.ServerResponse;
-
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
+import ar.com.api.derivatives.dto.ExchangeIdDTO;
 import ar.com.api.derivatives.services.DerivativesGeckoApiService;
 import ar.com.api.derivatives.utils.StringToInteger;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -76,9 +74,9 @@ public class DerivativesApiHandler {
 
         return serviceDerivatives
                 .getShowDerivativeExchangeData(dto)
-                .flatMap( data ->
+                .flatMap(data ->
                         ServerResponse.ok().bodyValue(data))
-                .onErrorResume( error -> {
+                .onErrorResume(error -> {
                     log.error("Error retrieving derivatives exchanges", error);
                     int valueErrorCode = ((WebClientResponseException) error.getCause())
                             .getStatusCode().value();
@@ -106,7 +104,7 @@ public class DerivativesApiHandler {
 
         return serviceDerivatives.getListDerivativeExchangedOrderedAndPaginated(filterDTO)
                 .collectList()
-                .flatMap( derivativeExchange -> ServerResponse.ok().bodyValue(derivativeExchange))
+                .flatMap(derivativeExchange -> ServerResponse.ok().bodyValue(derivativeExchange))
                 .onErrorResume(error -> {
                     log.error("Error retrieving List of Derivatives Exchanges Ordered and Paginated", error);
                     int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();

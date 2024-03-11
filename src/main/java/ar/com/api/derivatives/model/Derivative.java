@@ -2,53 +2,52 @@ package ar.com.api.derivatives.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Derivative {
- 
- @JsonProperty("market")
- private String market;
 
- @JsonProperty("symbol")
- private String symbol;
+    @JsonProperty("market")
+    private String market;
 
- @JsonProperty("index_id")
- private String indexId;
+    @JsonProperty("symbol")
+    private String symbol;
 
- @JsonProperty("price")
- private String price;
+    @JsonProperty("index_id")
+    private String indexId;
 
- @JsonProperty("price_percentage_change_24h")
- private double pricePercentageChange24h;
+    @JsonProperty("price")
+    private String price;
 
- @JsonProperty("contract_type")
- private String contractType;
+    @JsonProperty("price_percentage_change_24h")
+    private double pricePercentageChange24h;
 
- @JsonProperty("index")
- private double index;
+    @JsonProperty("contract_type")
+    private String contractType;
 
- @JsonProperty("basis")
- private double basis;
+    @JsonProperty("index")
+    private double index;
 
- @JsonProperty("spread")
- private double spread;
+    @JsonProperty("basis")
+    private double basis;
 
- @JsonProperty("funding_rate")
- private double fundingRate;
+    @JsonProperty("spread")
+    private double spread;
 
- @JsonProperty("open_interest")
- private double openInterest;
+    @JsonProperty("funding_rate")
+    private double fundingRate;
 
- @JsonProperty("volume_24h")
- private double volume24h;
+    @JsonProperty("open_interest")
+    private double openInterest;
 
- @JsonProperty("last_traded_at")
- private long lastTradedAt;
+    @JsonProperty("volume_24h")
+    private double volume24h;
 
- @JsonProperty("expired_at")
- private long expiredAt;
+    @JsonProperty("last_traded_at")
+    private long lastTradedAt;
+
+    @JsonProperty("expired_at")
+    private long expiredAt;
 
 }

@@ -1,6 +1,5 @@
 package ar.com.api.derivatives.handler;
 
-import ar.com.api.derivatives.model.Ping;
 import ar.com.api.derivatives.services.CoinGeckoServiceStatus;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,7 @@ public class HealthApiHandler {
                     log.error("Error fetching CoinGecko service status", error);
                     int valueErrorCode = ((WebClientResponseException) error.getCause())
                             .getStatusCode().value();
-                    return  ServerResponse.status(valueErrorCode)
+                    return ServerResponse.status(valueErrorCode)
                             .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
                 });
     }

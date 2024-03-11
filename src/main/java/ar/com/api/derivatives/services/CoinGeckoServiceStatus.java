@@ -4,7 +4,6 @@ import ar.com.api.derivatives.configuration.ExternalServerConfig;
 import ar.com.api.derivatives.exception.ManageExceptionCoinGeckoServiceApi;
 import ar.com.api.derivatives.model.Ping;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;

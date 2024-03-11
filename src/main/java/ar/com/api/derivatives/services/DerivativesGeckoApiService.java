@@ -1,18 +1,16 @@
 package ar.com.api.derivatives.services;
 
 import ar.com.api.derivatives.configuration.ExternalServerConfig;
-import ar.com.api.derivatives.exception.ManageExceptionCoinGeckoServiceApi;
-import ar.com.api.derivatives.model.Exchange;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
 import ar.com.api.derivatives.dto.ExchangeIdDTO;
+import ar.com.api.derivatives.exception.ManageExceptionCoinGeckoServiceApi;
 import ar.com.api.derivatives.model.Derivative;
 import ar.com.api.derivatives.model.DerivativeData;
 import ar.com.api.derivatives.model.DerivativeExchange;
+import ar.com.api.derivatives.model.Exchange;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -23,13 +21,13 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
     private WebClient webClient;
 
     private ExternalServerConfig externalServerConfig;
+
     public DerivativesGeckoApiService(WebClient wClient, ExternalServerConfig eServerConfig) {
         this.webClient = wClient;
         this.externalServerConfig = eServerConfig;
     }
 
     /**
-     *
      * @return
      */
     public Flux<Derivative> getListOfDerivatives() {
@@ -55,7 +53,6 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
     }
 
     /**
-     *
      * @param filterDTO
      * @return
      */
@@ -109,7 +106,7 @@ public class DerivativesGeckoApiService extends CoinGeckoServiceApi {
                 );
     }
 
-    public Flux<Exchange> getListOfDerivativesExchanges(){
+    public Flux<Exchange> getListOfDerivativesExchanges() {
 
         log.info("Calling method: " + externalServerConfig.getDerivativesExchangesList());
 

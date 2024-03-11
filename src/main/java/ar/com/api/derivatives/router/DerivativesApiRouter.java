@@ -1,7 +1,7 @@
 package ar.com.api.derivatives.router;
 
 import ar.com.api.derivatives.configuration.ApiServiceConfig;
-import org.springframework.beans.factory.annotation.Value;
+import ar.com.api.derivatives.handler.DerivativesApiHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -9,8 +9,6 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
-
-import ar.com.api.derivatives.handler.DerivativesApiHandler;
 
 @Configuration
 public class DerivativesApiRouter extends AbstractRouterConfig {
