@@ -1,11 +1,10 @@
 package ar.com.api.derivatives.handler;
 
-import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
 import ar.com.api.derivatives.dto.ExchangeIdDTO;
 import ar.com.api.derivatives.enums.ErrorTypeEnums;
 import ar.com.api.derivatives.exception.ApiClientErrorException;
+import ar.com.api.derivatives.handler.utils.MapperHandler;
 import ar.com.api.derivatives.services.DerivativesGeckoApiService;
-import ar.com.api.derivatives.utils.StringToInteger;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -43,6 +42,26 @@ public class DerivativesApiHandler {
                                 ErrorTypeEnums.API_SERVER_ERROR,
                                 HttpStatus.INTERNAL_SERVER_ERROR)
                 ));
+    }
+
+    public Mono<ServerResponse> getListDerivativesOfExchangesOrderedAndPaginated(ServerRequest sRequest) {
+        log.info("Fetching List of Derivative Exchanges from CoinGecko Api");
+
+        return Mono.just(sRequest)
+                .flatMap(MapperHandler::createDerivativeExchangeDTOFromRequest)
+                .flatMapMany(serviceDerivatives::getListDerivativeExchangedOrderedAndPaginated)
+                .collectList()
+                .flatMap(listDerivatives -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(listDerivatives)
+                ).switchIfEmpty(ServerResponse.notFound().build())
+                .doOnSubscribe(subscription -> log.info("Retrieving list of DerivativeExchange"))
+                .onErrorResume(error -> Mono
+                        .error(new ApiClientErrorException(
+                                "An unexpected error occurred in getListDerivativesOfExchangesOrderedAndPaginated",
+                                ErrorTypeEnums.API_SERVER_ERROR,
+                                HttpStatus.INTERNAL_SERVER_ERROR))
+                );
     }
 
     public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest) {
@@ -87,34 +106,6 @@ public class DerivativesApiHandler {
                     log.error("Error retrieving derivatives exchanges", error);
                     int valueErrorCode = ((WebClientResponseException) error.getCause())
                             .getStatusCode().value();
-                    return ServerResponse.status(valueErrorCode)
-                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
-                });
-    }
-
-    public Mono<ServerResponse> getListDerivativesOfExchangesOrderedAndPaginated(ServerRequest sRequest) {
-
-        log.info("In getListDerivativesOfExchangesOrderedAndPaginated");
-
-        Optional<Integer> optPerPage = sRequest
-                .queryParam("perPage")
-                .map(StringToInteger.INSTANCE);
-        Optional<Integer> optPage = sRequest
-                .queryParam("page")
-                .map(StringToInteger.INSTANCE);
-
-        DerivativeExchangeDTO filterDTO = DerivativeExchangeDTO.builder()
-                .order(sRequest.queryParam("order"))
-                .page(optPage)
-                .perPage(optPerPage)
-                .build();
-
-        return serviceDerivatives.getListDerivativeExchangedOrderedAndPaginated(filterDTO)
-                .collectList()
-                .flatMap(derivativeExchange -> ServerResponse.ok().bodyValue(derivativeExchange))
-                .onErrorResume(error -> {
-                    log.error("Error retrieving List of Derivatives Exchanges Ordered and Paginated", error);
-                    int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();
                     return ServerResponse.status(valueErrorCode)
                             .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
                 });

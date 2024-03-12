@@ -40,11 +40,11 @@ public class DerivativesGeckoApiService {
      */
     public Flux<DerivativeExchange> getListDerivativeExchangedOrderedAndPaginated(
             DerivativeExchangeDTO filterDTO) {
-
         log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesGecko()
                 + filterDTO.getUrlFilterString());
 
-        return null;
+        return httpServiceCall.getFluxObject(externalServerConfig.getDerivativesExchangesGecko()
+                + filterDTO.getUrlFilterString(), DerivativeExchange.class);
     }
 
     public Mono<DerivativeData> getShowDerivativeExchangeData(ExchangeIdDTO filterDTO) {

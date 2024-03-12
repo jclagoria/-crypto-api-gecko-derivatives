@@ -2,9 +2,11 @@ package ar.com.api.derivatives.services
 
 import ar.com.api.derivatives.configuration.ExternalServerConfig
 import ar.com.api.derivatives.configuration.HttpServiceCall
+import ar.com.api.derivatives.dto.DerivativeExchangeDTO
 import ar.com.api.derivatives.enums.ErrorTypeEnums
 import ar.com.api.derivatives.exception.ApiServerErrorException
 import ar.com.api.derivatives.model.Derivative
+import ar.com.api.derivatives.model.DerivativeExchange
 import org.instancio.Instancio
 import org.springframework.http.HttpStatus
 import reactor.core.publisher.Flux
@@ -89,6 +91,71 @@ class DerivativesGeckoApiServiceTest extends Specification {
                             errorActual.getHttpStatus().is5xxServerError() &&
                             errorActual.getMessage() == clientErrorExpected.getMessage()
                 }.verify()
+    }
+
+    def "GetListDerivativeExchangedOrderedAndPaginated should successfully retrieve a list of all derivatives exchanges"() {
+        given: "A mock setup for HttpServiceCall and Mock of DerivativeExchangeDTO and Mock of List DerivativeExchange"
+        def filterDTOMock = Instancio.create(DerivativeExchangeDTO.class)
+        def expectedDerivativeListMock = Instancio.ofList(DerivativeExchange).size(5).create()
+        httpServiceCallMock.getFluxObject(_ as String, DerivativeExchange.class) >>
+                Flux.fromIterable(expectedDerivativeListMock)
+
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called and return an DerivativeExchange"
+        def returnListObject = derivativesGeckoApiService
+                .getListDerivativeExchangedOrderedAndPaginated(filterDTOMock)
+
+        then: "The correct number of DerivativeExchange is returned, and content is verified"
+        StepVerifier.create(returnListObject)
+                .recordWith(ArrayList::new)
+                .expectNextCount(expectedDerivativeListMock.size())
+                .consumeRecordedWith {listDerivativesExchanges ->
+                    assert listDerivativesExchanges.containsAll(expectedDerivativeListMock): "The content of the List should not be different"
+                }
+                .verifyComplete()
+    }
+
+    def "GetListDerivativeExchangedOrderedAndPaginated should handle 4xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 4xx client error and Mock of DerivativeExchangeDTO"
+        def filterDTO = Instancio.create(DerivativeExchangeDTO.class)
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiClient", "Forbidden",
+                ErrorTypeEnums.GECKO_CLIENT_ERROR, HttpStatus.FORBIDDEN)
+        httpServiceCallMock.getFluxObject(_ as String, DerivativeExchange.class) >>
+                Flux.error(clientErrorExpected)
+
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called with a 4xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService
+                .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
+
+        then: "The service return 4xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches {errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_CLIENT_ERROR &&
+                            errorActual.getHttpStatus().is4xxClientError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()}
+                .verify()
+    }
+
+    def "GetListDerivativeExchangedOrderedAndPaginated should handle 5xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 5xx client error and Mock of DerivativeExchangeDTO"
+        def filterDTO = Instancio.create(DerivativeExchangeDTO.class)
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiServer", "Insufficient Storage",
+                ErrorTypeEnums.GECKO_SERVER_ERROR, HttpStatus.INSUFFICIENT_STORAGE)
+        httpServiceCallMock.getFluxObject(_ as String, DerivativeExchange.class) >>
+                Flux.error(clientErrorExpected)
+
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called with a 5xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService
+                .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
+
+        then: "The service return 5xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches {errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
+                            errorActual.getHttpStatus().is5xxServerError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()}
+                .verify()
     }
 
 }

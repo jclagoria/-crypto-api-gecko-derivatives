@@ -17,13 +17,10 @@ public class DerivativeExchangeDTO implements IFilterDTO {
     public String getUrlFilterString() {
 
         StringBuilder urlBuilder = new StringBuilder();
+        urlBuilder.append("?order=").append(order.orElse("name_asc"));
 
-        urlBuilder.append("?per_page=").append(perPage.orElse(50))
-                .append("&page=").append(page.orElse(1));
-
-        if (order.isPresent()) {
-            urlBuilder.append("&order=").append(perPage.get());
-        }
+        this.perPage.ifPresent(perPage -> urlBuilder.append("&per_page=").append(perPage));
+        this.page.ifPresent(pageResp -> urlBuilder.append("&page=").append(pageResp));
 
         return urlBuilder.toString();
     }
