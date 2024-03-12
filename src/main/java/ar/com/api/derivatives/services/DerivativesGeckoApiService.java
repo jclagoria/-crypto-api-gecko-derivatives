@@ -29,10 +29,9 @@ public class DerivativesGeckoApiService {
      * @return
      */
     public Flux<Derivative> getListOfDerivatives() {
-
         log.info("Calling method: {}", externalServerConfig.getDerivativesGecko());
 
-        return null;
+        return httpServiceCall.getFluxObject(externalServerConfig.getDerivativesGecko(), Derivative.class);
     }
 
     /**
