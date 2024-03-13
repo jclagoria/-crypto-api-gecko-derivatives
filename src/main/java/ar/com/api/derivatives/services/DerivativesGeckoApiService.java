@@ -56,7 +56,8 @@ public class DerivativesGeckoApiService {
         log.info("Calling method: {}", externalServerConfig.getDerivativesExchangesByIdGecko() +
                 filterDTO.getUrlFilterString());
 
-        return null;
+        return httpServiceCall.getMonoObject(urlDerivativesByExchangeId + filterDTO.getUrlFilterString(),
+                DerivativeData.class);
     }
 
     public Flux<Exchange> getListOfDerivativesExchanges() {

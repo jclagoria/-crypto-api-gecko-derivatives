@@ -10,9 +10,7 @@ import org.springframework.http.HttpStatus
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 import spock.lang.Specification
-import spock.lang.Stepwise
 
-@Stepwise
 class CoinGeckoServiceStatusTest extends Specification {
 
     HttpServiceCall httpServiceCallMock

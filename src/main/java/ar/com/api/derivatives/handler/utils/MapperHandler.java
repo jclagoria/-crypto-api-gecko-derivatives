@@ -1,6 +1,7 @@
 package ar.com.api.derivatives.handler.utils;
 
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO;
+import ar.com.api.derivatives.dto.ExchangeIdDTO;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import reactor.core.publisher.Mono;
 
@@ -17,6 +18,14 @@ public class MapperHandler {
                 .page(optPage)
                 .perPage(optPerPage)
                 .build());
+    }
+
+    public static Mono<ExchangeIdDTO> createExchangeIdDTODTOFromRequest(ServerRequest sRequest) {
+
+        return Mono.just(ExchangeIdDTO.builder()
+                .idExchange(sRequest.pathVariable("idExchange"))
+                .includeTickers(sRequest.queryParam("includeTickers")).build());
+
     }
 
 }

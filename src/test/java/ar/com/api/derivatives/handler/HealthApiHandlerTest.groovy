@@ -35,7 +35,7 @@ class HealthApiHandlerTest extends Specification {
 
         then: "The response is 200 Ok with the expected body"
         StepVerifier.create(actualObject)
-                .assertNext {actualResponse ->
+                .assertNext { actualResponse ->
                     assert actualResponse.statusCode() == HttpStatus.OK: "Status should not be different to OK"
                     assert actualResponse.headers().getContentType() ==
                             MediaType.APPLICATION_JSON: "ContentType should not be different to Application Json"
@@ -52,7 +52,7 @@ class HealthApiHandlerTest extends Specification {
 
         then: "The response expected is 404 Not Found"
         StepVerifier.create(actualEmptyObject)
-                .assertNext {actualResponse ->
+                .assertNext { actualResponse ->
                     assert actualResponse.statusCode() == HttpStatus.NOT_FOUND: "StatusCode should by Not Found"
                     assert actualResponse.headers().isEmpty()
                 }
@@ -69,7 +69,7 @@ class HealthApiHandlerTest extends Specification {
 
         then: "It handles the error and returns an internal server error"
         StepVerifier.create(actualErrorResponse)
-                .expectErrorMatches {actualError ->
+                .expectErrorMatches { actualError ->
                     actualError instanceof ApiClientErrorException &&
                             actualError.getHttpStatus() == HttpStatus.INTERNAL_SERVER_ERROR &&
                             actualError.getErrorTypeEnums() == ErrorTypeEnums.API_SERVER_ERROR &&
