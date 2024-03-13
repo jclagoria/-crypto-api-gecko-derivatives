@@ -1,231 +1,297 @@
 package ar.com.api.derivatives.services
 
 import ar.com.api.derivatives.configuration.ExternalServerConfig
+import ar.com.api.derivatives.configuration.HttpServiceCall
 import ar.com.api.derivatives.dto.DerivativeExchangeDTO
 import ar.com.api.derivatives.dto.ExchangeIdDTO
+import ar.com.api.derivatives.enums.ErrorTypeEnums
+import ar.com.api.derivatives.exception.ApiServerErrorException
 import ar.com.api.derivatives.model.Derivative
 import ar.com.api.derivatives.model.DerivativeData
 import ar.com.api.derivatives.model.DerivativeExchange
 import ar.com.api.derivatives.model.Exchange
-import ar.com.api.derivatives.utils.ValidationUtils
 import org.instancio.Instancio
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.http.HttpStatus
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 import spock.lang.Specification
-import spock.lang.Stepwise
 
-import java.util.function.Function
-import java.util.function.Predicate
-
-@Stepwise
 class DerivativesGeckoApiServiceTest extends Specification {
 
-    DerivativesGeckoApiService derivativesGeckoApiServiceMock
-    WebClient webClientMock = Mock()
-    WebClient.ResponseSpec responseSpecMock = Mock()
-    ExternalServerConfig externalServerConfig = Mock()
+    HttpServiceCall httpServiceCallMock
+    ExternalServerConfig externalServerConfigMock
+    DerivativesGeckoApiService derivativesGeckoApiService
 
     def setup() {
-        def requestHeaderUriMock = Mock(WebClient.RequestHeadersUriSpec)
-        def requestHeadersMock = Mock(WebClient.RequestHeadersSpec)
+        httpServiceCallMock = Mock(HttpServiceCall)
+        externalServerConfigMock = Mock(ExternalServerConfig)
 
-        externalServerConfig.getUrlCoinGecko() >> "mockUrlGlobal"
-        externalServerConfig.getDerivativesExchangesList() >> "mockUriListDerivatives"
-        externalServerConfig.getDerivativesGecko() >> "mockUriDerivativesGecko"
-        externalServerConfig.getDerivativesExchangesByIdGecko() >> "mockUriDerivativeData"
-        externalServerConfig.getDerivativesExchangesGecko() >> "mockUriDerivativesExchange"
+        externalServerConfigMock.getUrlCoinGecko() >> "mockUrlGlobal"
+        externalServerConfigMock.getDerivativesExchangesList() >> "mockUriListDerivatives"
+        externalServerConfigMock.getDerivativesGecko() >> "mockUriDerivativesGecko"
+        externalServerConfigMock.getDerivativesExchangesByIdGecko() >> "/mockUriDerivativeData/exchanges/bitmex"
+        externalServerConfigMock.getDerivativesExchangesGecko() >> "mockUriDerivativesExchange"
 
-        webClientMock.get() >> requestHeaderUriMock
-        requestHeaderUriMock.uri(_ as String) >> requestHeadersMock
-        requestHeadersMock.retrieve() >> responseSpecMock
-        responseSpecMock.onStatus(_ as Predicate, _ as Function) >> responseSpecMock
-
-        derivativesGeckoApiServiceMock = new DerivativesGeckoApiService(webClientMock, externalServerConfig)
+        derivativesGeckoApiService = new DerivativesGeckoApiService(httpServiceCallMock, externalServerConfigMock)
     }
 
-    def "getListOfDerivatives returns a list of derivatives successfully"() {
-        given:
-            Derivative expectedDerivativeMock = Instancio.create(Derivative)
-            responseSpecMock.bodyToFlux(Derivative) >> Flux.just(expectedDerivativeMock)
+    def "GetListOfDerivatives should successfully retrieve a list of Derivatives"() {
+        given: "A mock setup for HttpServiceCall and Mock List of Derivatives"
+        def expectedListDerivatives = Instancio.ofList(Derivative).size(7).create()
+        httpServiceCallMock.getFluxObject(_ as String, Derivative.class)
+                >> Flux.fromIterable(expectedListDerivatives)
 
-        when:
-            Flux<Derivative> actualDerivative = derivativesGeckoApiServiceMock.getListOfDerivatives()
+        when: "GetListOfDerivatives is called"
+        def returnListObject = derivativesGeckoApiService.getListOfDerivatives()
 
-        then:
-            StepVerifier
-                    .create(actualDerivative)
-                    .expectNext(expectedDerivativeMock)
-                    .verifyComplete()
+        then: "The correct number of Derivatives is returned, and content is verified"
+        StepVerifier.create(returnListObject)
+                .recordWith(ArrayList::new)
+                .expectNextCount(expectedListDerivatives.size())
+                .consumeRecordedWith { actualListDerivatives ->
+                    assert actualListDerivatives.containsAll(expectedListDerivatives): "The content of the List should not be different"
+                }
+                .verifyComplete()
     }
 
-    def "getListOfDerivatives handles 400 Bad Request Error"() {
-        given:
-            simulateWebClientErrorResponseForFlux(400, "Bad Request", Derivative)
+    def "GetListOfDerivatives should handle 4xx client error gracefully"() {
+        given: "A mock setup for ExternalServerConfig and HttpServiceCall with a 4xx client error"
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiClient",
+                "Request Timeout",
+                ErrorTypeEnums.GECKO_CLIENT_ERROR,
+                HttpStatus.REQUEST_TIMEOUT)
+        httpServiceCallMock.getFluxObject(_ as String, Derivative.class) >> Flux.error(clientErrorExpected)
 
-        when:
-            Flux<Exchange> result4xxError = derivativesGeckoApiServiceMock.getListOfDerivatives() as Flux<Exchange>
+        when: "GetListOfDerivatives is called with a 4xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService.getListOfDerivatives()
 
-        then:
-            ValidationUtils.validate4xxError(result4xxError)
+        then: "The service return 4xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches { errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_CLIENT_ERROR &&
+                            errorActual.getHttpStatus().is4xxClientError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }.verify()
     }
 
-    def "getListOfDerivatives handles 500 Internal Server Exception"() {
-        given:
-            simulateWebClientErrorResponseForFlux(500, "Internal Server Exception", Derivative)
+    def "GetListOfDerivatives should handle 5xx server error gracefully"() {
+        given: "A mock setup for ExternalServerConfig and HttpServiceCall with a 5xx server error"
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiServer",
+                "Bad Gateway",
+                ErrorTypeEnums.GECKO_SERVER_ERROR,
+                HttpStatus.BAD_GATEWAY)
+        httpServiceCallMock.getFluxObject(_ as String, Derivative.class) >> Flux.error(clientErrorExpected)
 
-        when:
-            Flux<Exchange> error5xxResult = derivativesGeckoApiServiceMock.getListOfDerivatives() as Flux<Exchange>
+        when: "GetListOfDerivatives is called with a 5xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService.getListOfDerivatives()
 
-        then:
-            ValidationUtils.validate5xxError(error5xxResult)
+        then: "The service return 5xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches { errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
+                            errorActual.getHttpStatus().is5xxServerError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }.verify()
     }
 
-    def "getListOfDerivativesExchanges returns a list of exchanges successfully"() {
-        given:
-            Exchange expectedExchangeMock = Instancio.create(Exchange)
-            responseSpecMock.bodyToFlux(Exchange) >> Flux.just(expectedExchangeMock)
+    def "GetListDerivativeExchangedOrderedAndPaginated should successfully retrieve a list of all derivatives exchanges"() {
+        given: "A mock setup for HttpServiceCall and Mock of DerivativeExchangeDTO and Mock of List DerivativeExchange"
+        def filterDTOMock = Instancio.create(DerivativeExchangeDTO.class)
+        def expectedDerivativeListMock = Instancio.ofList(DerivativeExchange).size(5).create()
+        httpServiceCallMock.getFluxObject(_ as String, DerivativeExchange.class) >>
+                Flux.fromIterable(expectedDerivativeListMock)
 
-        when:
-            Flux<Exchange> actualExchange = derivativesGeckoApiServiceMock.getListOfDerivativesExchanges()
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called and return an DerivativeExchange"
+        def returnListObject = derivativesGeckoApiService
+                .getListDerivativeExchangedOrderedAndPaginated(filterDTOMock)
 
-        then:
-            StepVerifier
-                    .create(actualExchange)
-                    .expectNext(expectedExchangeMock)
-                    .verifyComplete()
+        then: "The correct number of DerivativeExchange is returned, and content is verified"
+        StepVerifier.create(returnListObject)
+                .recordWith(ArrayList::new)
+                .expectNextCount(expectedDerivativeListMock.size())
+                .consumeRecordedWith { listDerivativesExchanges ->
+                    assert listDerivativesExchanges.containsAll(expectedDerivativeListMock): "The content of the List should not be different"
+                }
+                .verifyComplete()
     }
 
-    def "getListOfDerivativesExchanges handles 400 Bad Request Error"() {
-        given:
-            simulateWebClientErrorResponseForFlux(400, "Bad Request", Exchange)
+    def "GetListDerivativeExchangedOrderedAndPaginated should handle 4xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 4xx client error and Mock of DerivativeExchangeDTO"
+        def filterDTO = Instancio.create(DerivativeExchangeDTO.class)
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiClient", "Forbidden",
+                ErrorTypeEnums.GECKO_CLIENT_ERROR, HttpStatus.FORBIDDEN)
+        httpServiceCallMock.getFluxObject(_ as String, DerivativeExchange.class) >>
+                Flux.error(clientErrorExpected)
 
-        when:
-            Flux<Exchange> result4xxError = derivativesGeckoApiServiceMock.getListOfDerivativesExchanges()
-
-        then:
-            ValidationUtils.validate4xxError(result4xxError)
-    }
-
-    def "getListOfDerivativesExchanges handles 500 Internal Server Error"() {
-        given:
-            simulateWebClientErrorResponseForFlux(500, "Internal Server Error", Exchange)
-
-        when:
-            Flux<Exchange> result5xxError = derivativesGeckoApiServiceMock.getListOfDerivativesExchanges()
-
-        then:
-            ValidationUtils.validate5xxError(result5xxError)
-    }
-
-    def "getShowDerivativeExchangeData returns derivative data successfully"() {
-        given:
-            ExchangeIdDTO filterDTO = Instancio.create(ExchangeIdDTO)
-            DerivativeData expectedDerivativeData = Instancio.create(DerivativeData)
-            responseSpecMock.bodyToMono(DerivativeData) >> Mono.just(expectedDerivativeData)
-
-        when:
-            Mono<DerivativeData> actualDerivativeData = derivativesGeckoApiServiceMock
-                    .getShowDerivativeExchangeData(filterDTO)
-
-        then:
-            StepVerifier
-                    .create(actualDerivativeData)
-                    .expectNext(expectedDerivativeData)
-                    .verifyComplete()
-    }
-
-    def "getShowDerivativeExchangeData handles 400 Bad Request Error"() {
-        given:
-            ExchangeIdDTO filterDTO = Instancio.create(ExchangeIdDTO)
-            simulateWebClientErrorResponseForMono(400, "Bad Request", DerivativeData)
-
-        when:
-        Mono<DerivativeData> result4xxError = derivativesGeckoApiServiceMock.getShowDerivativeExchangeData(filterDTO)
-
-        then:
-            ValidationUtils.validate4xxError(result4xxError)
-    }
-
-    def "getShowDerivativeExchangeData handles 500 Internal Server Error"() {
-        given:
-            ExchangeIdDTO filterDTO = Instancio.create(ExchangeIdDTO)
-            simulateWebClientErrorResponseForMono(500, "Internal Server Error", DerivativeData)
-
-        when:
-            Mono<DerivativeData> result5xxError = derivativesGeckoApiServiceMock.getShowDerivativeExchangeData(filterDTO)
-
-        then:
-            ValidationUtils.validate5xxError(result5xxError)
-    }
-
-    def "getListDerivativeExchangedOrderedAndPaginated returns derivative data successfully"() {
-        given:
-            DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
-            DerivativeExchange expectedDerivativeExchange = Instancio.create(DerivativeExchange)
-            responseSpecMock.bodyToFlux(DerivativeExchange) >> Flux.just(expectedDerivativeExchange)
-
-        when:
-            Flux<DerivativeExchange> actualDerivativeExchange = derivativesGeckoApiServiceMock
-                    .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
-        then:
-            StepVerifier
-                    .create(actualDerivativeExchange)
-                    .expectNext(expectedDerivativeExchange)
-                    .verifyComplete()
-    }
-
-    def "getListDerivativeExchangedOrderedAndPaginated handles 400 Bad Request Error"() {
-        given:
-            DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
-            simulateWebClientErrorResponseForFlux(400, "Bad Request", DerivativeExchange)
-
-        when:
-            Flux<DerivativeExchange> result4xxError = derivativesGeckoApiServiceMock
-                    .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
-
-        then:
-            ValidationUtils.validate4xxError(result4xxError)
-    }
-
-    def "getListDerivativeExchangedOrderedAndPaginated handles 500 Server Internal Error"() {
-        given:
-            DerivativeExchangeDTO filterDTO = Instancio.create(DerivativeExchangeDTO)
-            simulateWebClientErrorResponseForFlux(500,
-                    "Server Internal Error", DerivativeExchange)
-
-        when:
-        Flux<DerivativeExchange> result5xxError = derivativesGeckoApiServiceMock
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called with a 4xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService
                 .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
 
-        then:
-        ValidationUtils.validate5xxError(result5xxError)
+        then: "The service return 4xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches { errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_CLIENT_ERROR &&
+                            errorActual.getHttpStatus().is4xxClientError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
     }
 
-    private void simulateWebClientErrorResponseForFlux(int statusCode, String statusMessage, Class responseType) {
-        WebClient.ResponseSpec errorResponseSpecMock = Mock()
-        WebClient.RequestHeadersSpec requestHeadersSpecMock = Mock()
-        WebClient.RequestHeadersUriSpec requestHeadersUriSpecMock = Mock()
-        webClientMock.get() >> requestHeadersUriSpecMock
-        requestHeadersUriSpecMock.uri(_) >> requestHeadersSpecMock
-        requestHeadersSpecMock.retrieve() >> errorResponseSpecMock
-        WebClientResponseException mockException = WebClientResponseException
-                .create(statusCode, statusMessage, null, null, null)
-        responseSpecMock.bodyToFlux(responseType) >> Flux.error(mockException)
+    def "GetListDerivativeExchangedOrderedAndPaginated should handle 5xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 5xx client error and Mock of DerivativeExchangeDTO"
+        def filterDTO = Instancio.create(DerivativeExchangeDTO.class)
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiServer", "Insufficient Storage",
+                ErrorTypeEnums.GECKO_SERVER_ERROR, HttpStatus.INSUFFICIENT_STORAGE)
+        httpServiceCallMock.getFluxObject(_ as String, DerivativeExchange.class) >>
+                Flux.error(clientErrorExpected)
+
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called with a 5xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService
+                .getListDerivativeExchangedOrderedAndPaginated(filterDTO)
+
+        then: "The service return 5xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches { errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
+                            errorActual.getHttpStatus().is5xxServerError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
     }
 
-    private void simulateWebClientErrorResponseForMono(int statusCode, String statusMessage, Class responseType) {
-        WebClient.ResponseSpec errorResponseSpecMock = Mock()
-        WebClient.RequestHeadersSpec requestHeadersSpecMock = Mock()
-        WebClient.RequestHeadersUriSpec requestHeadersUriSpecMock = Mock()
-        webClientMock.get() >> requestHeadersUriSpecMock
-        requestHeadersUriSpecMock.uri(_) >> requestHeadersSpecMock
-        requestHeadersSpecMock.retrieve() >> errorResponseSpecMock
-        WebClientResponseException mockException = WebClientResponseException
-                .create(statusCode, statusMessage, null, null, null)
-        responseSpecMock.bodyToMono(responseType) >> Mono.error(mockException)
+    def "GetShowDerivativeExchangeData should successfully retrieve an DerivativeData object"() {
+        given: "A mock setup HttpServiceCall and Mock of ExchangeIdDTO and Mock of DerivativeData"
+        def filterDTO = Instancio.create(ExchangeIdDTO.class)
+        def expectedObject = Instancio.create(DerivativeData.class)
+        httpServiceCallMock.getMonoObject(_ as String, DerivativeData.class) >> Mono.just(expectedObject)
+
+        when: "GetShowDerivativeExchangeData is called and return on Object DerivativeData"
+        def actualObject = derivativesGeckoApiService.getShowDerivativeExchangeData(filterDTO)
+
+        then: "The service return an Object successfully, and validate the content"
+        StepVerifier.create(actualObject)
+                .assertNext { derivativeDataExp ->
+                    assert derivativeDataExp != null: "The expected object should not be null"
+                    assert derivativeDataExp.getName() == expectedObject.getName(): "The name of the derivative date on expected and actual should not be different"
+                    assert derivativeDataExp.getCountry() == expectedObject.getCountry(): "The country of the country date on expected and actual should not be different"
+                    assert derivativeDataExp.getImage() == expectedObject.getImage(): "The image of the country date on expected and actual should not be different"
+                }
+                .verifyComplete()
+    }
+
+    def "GetShowDerivativeExchangeData should handle 4xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 4xx client error and Mock of DerivativeExchangeDTO"
+        def filterDTO = Instancio.create(ExchangeIdDTO.class)
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiClient", "Forbidden",
+                ErrorTypeEnums.GECKO_CLIENT_ERROR, HttpStatus.FORBIDDEN)
+        httpServiceCallMock.getMonoObject(_ as String, DerivativeData.class) >>
+                Mono.error(clientErrorExpected)
+
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called with a 4xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService
+                .getShowDerivativeExchangeData(filterDTO)
+
+        then: "The service return 4xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches { errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_CLIENT_ERROR &&
+                            errorActual.getHttpStatus().is4xxClientError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
+    }
+
+    def "GetShowDerivativeExchangeData should handle 5xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 5xx client error and Mock of DerivativeExchangeDTO"
+        def filterDTO = Instancio.create(ExchangeIdDTO.class)
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiServer", "Bandwidth Limit Exceeded",
+                ErrorTypeEnums.GECKO_SERVER_ERROR, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED)
+        httpServiceCallMock.getMonoObject(_ as String, DerivativeData.class) >>
+                Mono.error(clientErrorExpected)
+
+        when: "GetListDerivativeExchangedOrderedAndPaginated is called with a 5xx error scenario"
+        def actualExceptionObject = derivativesGeckoApiService
+                .getShowDerivativeExchangeData(filterDTO)
+
+        then: "The service return 5xx client"
+        StepVerifier.create(actualExceptionObject)
+                .expectErrorMatches { errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
+                            errorActual.getHttpStatus().is5xxServerError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
+    }
+
+    def "GetListOfDerivativesExchanges should successfully retrieve a list of all Exchanges"() {
+        given: "A mock setup for HttpServiceCall and Mock of List Exchanges"
+        def expectedExchangesListMock = Instancio.ofList(Exchange).size(5).create()
+        httpServiceCallMock.getFluxObject(_ as String, Exchange.class) >>
+                Flux.fromIterable(expectedExchangesListMock)
+
+        when: "GetListOfDerivativesExchanges is called and return a List of Exchanges"
+        def returnListObject = derivativesGeckoApiService.getListOfDerivativesExchanges()
+
+        then: "The correct number of Exchanges is returned, and content is verified"
+        StepVerifier.create(returnListObject)
+                .recordWith(ArrayList::new)
+                .expectNextCount(expectedExchangesListMock.size())
+                .consumeRecordedWith {listOfExchanges ->
+                    assert listOfExchanges.containsAll(expectedExchangesListMock): "The content of the List should not be different"
+                }
+                .verifyComplete()
+
+    }
+
+    def "GetListOfDerivativesExchanges should handle 4xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 4xx client error"
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiClient",
+                "Proxy Authentication Required",
+                ErrorTypeEnums.GECKO_CLIENT_ERROR,
+                HttpStatus.PROXY_AUTHENTICATION_REQUIRED)
+        httpServiceCallMock.getFluxObject(_ as String, Exchange.class) >> Flux.error(clientErrorExpected)
+
+        when: "GetListOfDerivativesExchanges is called with a 4xx error scenario"
+        def returnListObject = derivativesGeckoApiService.getListOfDerivativesExchanges()
+
+        then: "The service return 4xx client"
+        StepVerifier.create(returnListObject)
+                .expectErrorMatches {errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_CLIENT_ERROR &&
+                            errorActual.getHttpStatus().is4xxClientError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
+    }
+
+    def "GetListOfDerivativesExchanges should handle 5xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 5xx client error"
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiServer",
+                "Service Unavailable",
+                ErrorTypeEnums.GECKO_SERVER_ERROR,
+                HttpStatus.SERVICE_UNAVAILABLE)
+        httpServiceCallMock.getFluxObject(_ as String, Exchange.class) >> Flux.error(clientErrorExpected)
+
+        when: "GetListOfDerivativesExchanges is called with a 5xx error scenario"
+        def returnListObject = derivativesGeckoApiService.getListOfDerivativesExchanges()
+
+        then: "The service return 5xx client"
+        StepVerifier.create(returnListObject)
+                .expectErrorMatches {errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
+                            errorActual.getHttpStatus().is5xxServerError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
     }
 
 }

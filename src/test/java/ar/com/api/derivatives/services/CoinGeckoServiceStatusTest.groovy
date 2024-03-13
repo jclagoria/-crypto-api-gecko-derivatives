@@ -1,89 +1,88 @@
 package ar.com.api.derivatives.services
 
 import ar.com.api.derivatives.configuration.ExternalServerConfig
+import ar.com.api.derivatives.configuration.HttpServiceCall
+import ar.com.api.derivatives.enums.ErrorTypeEnums
+import ar.com.api.derivatives.exception.ApiServerErrorException
 import ar.com.api.derivatives.model.Ping
-import ar.com.api.derivatives.utils.ValidationUtils
 import org.instancio.Instancio
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.http.HttpStatus
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 import spock.lang.Specification
-import spock.lang.Stepwise
 
-import java.util.function.Function
-import java.util.function.Predicate
-
-@Stepwise
 class CoinGeckoServiceStatusTest extends Specification {
 
+    HttpServiceCall httpServiceCallMock
+    ExternalServerConfig externalServerConfigMock
     CoinGeckoServiceStatus coinGeckoServiceStatus
-    WebClient webClientMock = Mock()
-    WebClient.ResponseSpec responseSpecMock = Mock()
-    ExternalServerConfig externalServerConfig = Mock()
 
     def setup() {
-        def requestHeaderUriMock = Mock(WebClient.RequestHeadersUriSpec)
-        def requestHeaderMock = Mock(WebClient.RequestHeadersSpec)
+        httpServiceCallMock = Mock(HttpServiceCall)
+        externalServerConfigMock = Mock(ExternalServerConfig)
 
-        externalServerConfig.getUrlCoinGecko() >> "mockUrlGlobal"
-        externalServerConfig.getPing() >> "mockUrlPing"
+        externalServerConfigMock.getPing() >> "mockUrlPing"
 
-        webClientMock.get() >> requestHeaderUriMock
-        requestHeaderUriMock.uri(_ as String) >> requestHeaderMock
-        requestHeaderMock.retrieve() >> responseSpecMock
-        responseSpecMock.onStatus(_ as Predicate, _ as Function) >> responseSpecMock
-
-        coinGeckoServiceStatus = new CoinGeckoServiceStatus(webClientMock, externalServerConfig)
+        coinGeckoServiceStatus = new CoinGeckoServiceStatus(httpServiceCallMock, externalServerConfigMock)
     }
 
-    def "getStatusCoinGeckoService returns a String successfully"() {
-        given:
-            Ping expectedPingMock = Instancio.create(Ping)
-            responseSpecMock.bodyToMono(Ping) >> Mono.just(expectedPingMock)
+    def "GetStatusCoinGeckoService should successfully retrieve service status"() {
+        given: "A mock setup for HttpServiceCall and ExternalServerConfig"
+        def expectedPingObject = Instancio.create(Ping.class)
+        httpServiceCallMock.getMonoObject(_ as String, Ping.class) >> Mono.just(expectedPingObject)
 
-        when:
-            Mono<Ping> actualPing = coinGeckoServiceStatus.getStatusCoinGeckoService()
+        when: "GetStatusCoinGeckoService is called without filterDTO"
+        def actualObject = coinGeckoServiceStatus.getStatusCoinGeckoService()
 
-        then:
-            StepVerifier
-                    .create(actualPing)
-                    .expectNext(expectedPingMock)
-                    .verifyComplete()
+        then: "The service returns the expected Ping object"
+        StepVerifier.create(actualObject)
+                .assertNext { pingObject ->
+                    assert pingObject.getGeckoSays() != null: "Ping should not be null"
+                    assert pingObject.getGeckoSays() == expectedPingObject.getGeckoSays(): "Gecko says field not match"
+                }
+                .verifyComplete()
     }
 
-    def "getStatusCoinGeckoService handle 400 Bad Request Error"() {
-        given:
-            simulateWebClientErrorResponseForMono(400, "Bad Request", Ping)
+    def "GetStatusCoinGeckoService should handle 4xx client error gracefully"() {
+        given: "A mock setup HttpServiceCall and ExternalServerConfig with a 4xx client error"
+        def expectedApiClientError = new ApiServerErrorException("An error occurred on APIClient",
+                "Bad Request",
+                ErrorTypeEnums.GECKO_CLIENT_ERROR, HttpStatus.BAD_REQUEST)
+        httpServiceCallMock.getMonoObject(_ as String, Ping.class) >> Mono.error(expectedApiClientError)
 
-        when:
-            Mono<Ping> result4xxError = coinGeckoServiceStatus.getStatusCoinGeckoService()
+        when: "GetStatusCoinGeckoService is called with a 4xx error scenario"
+        def actualErrorObject = coinGeckoServiceStatus.getStatusCoinGeckoService()
 
-        then:
-            ValidationUtils.validate4xxError(result4xxError)
+        then: "The service gracefully handle the error"
+        StepVerifier.create(actualErrorObject)
+                .expectErrorMatches { errorObject ->
+                    errorObject instanceof ApiServerErrorException &&
+                            errorObject.getHttpStatus().is4xxClientError() &&
+                            errorObject.getErrorTypeEnums() == ErrorTypeEnums.GECKO_CLIENT_ERROR &&
+                            errorObject.getOriginalMessage() == expectedApiClientError.getOriginalMessage()
+                }
+                .verify()
     }
 
-    def "getStatusCoinGeckoService handle 500 Internal Server Error"() {
-        given:
-            simulateWebClientErrorResponseForMono(500, "Internal Server Error", Ping)
+    def "GetStatusCoinGeckoService should handle 5xx client error gracefully"() {
+        given: "A mock setup HttpServiceCall and ExternalServerConfig with a 5xx client error"
+        def expectedApiClientError = new ApiServerErrorException("An error occurred on APIServer",
+                "Internal Server Error",
+                ErrorTypeEnums.GECKO_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+        httpServiceCallMock.getMonoObject(_ as String, Ping.class) >> Mono.error(expectedApiClientError)
 
-        when:
-            Mono<Ping> result5xxError = coinGeckoServiceStatus.getStatusCoinGeckoService()
+        when: "GetStatusCoinGeckoService is called with a 5xx error scenario"
+        def actualErrorObject = coinGeckoServiceStatus.getStatusCoinGeckoService()
 
-        then:
-            ValidationUtils.validate5xxError(result5xxError)
-    }
-
-    private void simulateWebClientErrorResponseForMono(int statusCode, String statusMessage, Class responseType) {
-        WebClient.ResponseSpec errorResponseSpecMock = Mock()
-        WebClient.RequestHeadersSpec requestHeadersSpecMock = Mock()
-        WebClient.RequestHeadersUriSpec requestHeadersUriSpecMock = Mock()
-        webClientMock.get() >> requestHeadersUriSpecMock
-        requestHeadersUriSpecMock.uri(_) >> requestHeadersSpecMock
-        requestHeadersSpecMock.retrieve() >> errorResponseSpecMock
-        WebClientResponseException mockException = WebClientResponseException
-                .create(statusCode, statusMessage, null, null, null)
-        responseSpecMock.bodyToMono(responseType) >> Mono.error(mockException)
+        then: "The service gracefully handle the error"
+        StepVerifier.create(actualErrorObject)
+                .expectErrorMatches { errorObject ->
+                    errorObject instanceof ApiServerErrorException &&
+                            errorObject.getHttpStatus().is5xxServerError() &&
+                            errorObject.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
+                            errorObject.getOriginalMessage() == expectedApiClientError.getOriginalMessage()
+                }
+                .verify()
     }
 
 }
