@@ -9,6 +9,7 @@ import ar.com.api.derivatives.exception.ApiServerErrorException
 import ar.com.api.derivatives.model.Derivative
 import ar.com.api.derivatives.model.DerivativeData
 import ar.com.api.derivatives.model.DerivativeExchange
+import ar.com.api.derivatives.model.Exchange
 import org.instancio.Instancio
 import org.springframework.http.HttpStatus
 import reactor.core.publisher.Flux
@@ -221,6 +222,70 @@ class DerivativesGeckoApiServiceTest extends Specification {
         then: "The service return 5xx client"
         StepVerifier.create(actualExceptionObject)
                 .expectErrorMatches { errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
+                            errorActual.getHttpStatus().is5xxServerError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
+    }
+
+    def "GetListOfDerivativesExchanges should successfully retrieve a list of all Exchanges"() {
+        given: "A mock setup for HttpServiceCall and Mock of List Exchanges"
+        def expectedExchangesListMock = Instancio.ofList(Exchange).size(5).create()
+        httpServiceCallMock.getFluxObject(_ as String, Exchange.class) >>
+                Flux.fromIterable(expectedExchangesListMock)
+
+        when: "GetListOfDerivativesExchanges is called and return a List of Exchanges"
+        def returnListObject = derivativesGeckoApiService.getListOfDerivativesExchanges()
+
+        then: "The correct number of Exchanges is returned, and content is verified"
+        StepVerifier.create(returnListObject)
+                .recordWith(ArrayList::new)
+                .expectNextCount(expectedExchangesListMock.size())
+                .consumeRecordedWith {listOfExchanges ->
+                    assert listOfExchanges.containsAll(expectedExchangesListMock): "The content of the List should not be different"
+                }
+                .verifyComplete()
+
+    }
+
+    def "GetListOfDerivativesExchanges should handle 4xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 4xx client error"
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiClient",
+                "Proxy Authentication Required",
+                ErrorTypeEnums.GECKO_CLIENT_ERROR,
+                HttpStatus.PROXY_AUTHENTICATION_REQUIRED)
+        httpServiceCallMock.getFluxObject(_ as String, Exchange.class) >> Flux.error(clientErrorExpected)
+
+        when: "GetListOfDerivativesExchanges is called with a 4xx error scenario"
+        def returnListObject = derivativesGeckoApiService.getListOfDerivativesExchanges()
+
+        then: "The service return 4xx client"
+        StepVerifier.create(returnListObject)
+                .expectErrorMatches {errorActual ->
+                    errorActual instanceof ApiServerErrorException &&
+                            errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_CLIENT_ERROR &&
+                            errorActual.getHttpStatus().is4xxClientError() &&
+                            errorActual.getMessage() == clientErrorExpected.getMessage()
+                }
+                .verify()
+    }
+
+    def "GetListOfDerivativesExchanges should handle 5xx client error gracefully"() {
+        given: "A mock setup for HttpServiceCall with a 5xx client error"
+        def clientErrorExpected = new ApiServerErrorException("An error occurred in ApiServer",
+                "Service Unavailable",
+                ErrorTypeEnums.GECKO_SERVER_ERROR,
+                HttpStatus.SERVICE_UNAVAILABLE)
+        httpServiceCallMock.getFluxObject(_ as String, Exchange.class) >> Flux.error(clientErrorExpected)
+
+        when: "GetListOfDerivativesExchanges is called with a 5xx error scenario"
+        def returnListObject = derivativesGeckoApiService.getListOfDerivativesExchanges()
+
+        then: "The service return 5xx client"
+        StepVerifier.create(returnListObject)
+                .expectErrorMatches {errorActual ->
                     errorActual instanceof ApiServerErrorException &&
                             errorActual.getErrorTypeEnums() == ErrorTypeEnums.GECKO_SERVER_ERROR &&
                             errorActual.getHttpStatus().is5xxServerError() &&

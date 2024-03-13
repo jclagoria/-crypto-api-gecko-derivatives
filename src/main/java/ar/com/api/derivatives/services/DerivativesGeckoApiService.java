@@ -61,10 +61,10 @@ public class DerivativesGeckoApiService {
     }
 
     public Flux<Exchange> getListOfDerivativesExchanges() {
-
         log.info("Calling method: " + externalServerConfig.getDerivativesExchangesList());
 
-        return null;
+        return httpServiceCall.getFluxObject(externalServerConfig.getDerivativesExchangesList(),
+                Exchange.class);
     }
 
 }

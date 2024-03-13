@@ -84,21 +84,24 @@ public class DerivativesApiHandler {
     }
 
     public Mono<ServerResponse> getAllDerivativesExchanges(ServerRequest serverRequest) {
-
-        log.info("Starting getAllDerivativesExchanges");
+        log.info("Fetching List of Exchanges Data from CoinGecko Api");
 
         return serviceDerivatives
                 .getListOfDerivativesExchanges()
                 .collectList()
                 .flatMap(
-                        exchanges -> ServerResponse.ok().bodyValue(exchanges)
+                        exchanges -> ServerResponse.ok()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(exchanges)
                 )
-                .onErrorResume(error -> {
-                    log.error("Error retrieving derivatives exchanges", error);
-                    int valueErrorCode = ((WebClientResponseException) error.getCause()).getStatusCode().value();
-                    return ServerResponse.status(valueErrorCode)
-                            .bodyValue(((WebClientResponseException) error.getCause()).getStatusText());
-                });
+                .switchIfEmpty(ServerResponse.notFound().build())
+                .doOnSubscribe(subscription -> log.info("Retrieving list of Exchange"))
+                .onErrorResume(error -> Mono.error(
+                        new ApiClientErrorException(
+                                "An unexpected error occurred in getAllDerivativesExchanges",
+                                ErrorTypeEnums.API_SERVER_ERROR,
+                                HttpStatus.INTERNAL_SERVER_ERROR)
+                ));
     }
 
 }

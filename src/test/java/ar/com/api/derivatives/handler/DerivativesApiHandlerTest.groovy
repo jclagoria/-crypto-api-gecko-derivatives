@@ -7,6 +7,7 @@ import ar.com.api.derivatives.exception.ApiClientErrorException
 import ar.com.api.derivatives.model.Derivative
 import ar.com.api.derivatives.model.DerivativeData
 import ar.com.api.derivatives.model.DerivativeExchange
+import ar.com.api.derivatives.model.Exchange
 import ar.com.api.derivatives.services.DerivativesGeckoApiService
 import ar.com.api.derivatives.validators.ValidatorOfCTOComponent
 import org.instancio.Instancio
@@ -177,6 +178,43 @@ class DerivativesApiHandlerTest extends Specification {
                     actualError instanceof ApiClientErrorException &&
                             ErrorTypeEnums.API_SERVER_ERROR == actualError.getErrorTypeEnums() &&
                             actualError.getMessage() == "An unexpected error occurred in getShowDerivativeExchangeData"
+                }
+                .verify()
+    }
+
+    def "GetAllDerivativesExchanges return successfully a ServerRequest with HttpStatus Ok"() {
+        given: "Mocked ServerRequest and DerivativesGeckoApiService and DerivativesApiHandler return HttStatus Ok"
+        def expectedListExchanges = Instancio.ofList(Exchange.class).size(7).create()
+        derivativesGeckoApiServiceMock.getListOfDerivativesExchanges() >>
+                Flux.fromIterable(expectedListExchanges)
+
+        when: "GetAllDerivativesExchanges is called and return successfully ServerResponse"
+        def actualResponse = derivativesApiHandler.getAllDerivativesExchanges(serverRequestMock)
+
+        then: "It returns a ServerResponse with HttpResponse 200 Ok"
+        StepVerifier.create(actualResponse)
+                .expectNextMatches {response ->
+                    response.statusCode().is2xxSuccessful() &&
+                            response.headers().getContentType() == MediaType.APPLICATION_JSON
+                }
+                .verifyComplete()
+    }
+
+    def "GetAllDerivativesExchanges handles and error gracefully"() {
+        given: "A mock ServerRequest and an Internal Error Server"
+        derivativesGeckoApiServiceMock.getListOfDerivativesExchanges() >>
+                Flux.error(new RuntimeException("An error occurred"))
+
+        when: "GetListOfDerivativesTickers called and expected a Internal Server Error"
+        def errorActualResponse = derivativesApiHandler
+                .getAllDerivativesExchanges(serverRequestMock)
+
+        then: "It handles the error and returns an Internal Server Error"
+        StepVerifier.create(errorActualResponse)
+                .expectErrorMatches { actualError ->
+                    actualError instanceof ApiClientErrorException &&
+                            ErrorTypeEnums.API_SERVER_ERROR == actualError.getErrorTypeEnums() &&
+                            actualError.getMessage() == "An unexpected error occurred in getAllDerivativesExchanges"
                 }
                 .verify()
     }
